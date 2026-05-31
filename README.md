@@ -1,6 +1,6 @@
 # Zamolxis
 
-A self-hosted, multi-channel **autonomous agent** built on the **Claude Agent SDK** — persistent memory, self-authored skills, scheduling, subagent delegation, shell + web access — funded entirely by your **Claude Pro/Max subscription** rather than the metered API.
+A self-hosted, multi-channel **autonomous agent** built on the **Claude Agent SDK** — persistent memory, self-authored skills, scheduling, subagent delegation, shell + web access. It's primarily funded by your **Claude Pro/Max subscription** (not the metered API), and a **configurable routing chain** offloads work to a **free on-device model** and **free- or paid-tier cloud providers** — so most turns can run at no cost, and you can even keep Claude out of the routing chain entirely (local + free only).
 
 ## Disclaimer
 
@@ -18,6 +18,17 @@ A Claude subscription does not grant metered Messages-API access. What it *does*
 - The whole agent runs on your subscription. **Never set `ANTHROPIC_API_KEY`** — if present, it's hidden from the engine so the subscription is used (override with `ZAMOLXIS_ALLOW_API_KEY=1`).
 - You're governed by **subscription rate limits** (rolling windows), not pay-as-you-go. Zamolxis throttles concurrent turns (`ZAMOLXIS_MAX_CONCURRENT`) so an always-on agent doesn't burn the quota.
 - Two features can't be subscription-funded and are optional, key-gated plugins that degrade gracefully without keys: **cross-provider model routing** and **image generation**. Routing *within* the Claude family (Opus/Sonnet/Haiku) is free.
+
+## Models & providers — you're not locked to Claude
+
+Zamolxis routes each turn through a **configurable chain of tiers**, so most work can run **for free** and you decide how much (if any) touches the subscription:
+
+- **Local model (free, on-device)** — a small model via [Ollama](https://ollama.com) answers simple turns entirely offline for **0 subscription tokens**. The installer offers a **menu of models that fit your hardware** (`-Local`/`--local`).
+- **Free-tier cloud providers** — bring free API keys for **Google (Gemini), Cerebras, Groq, Mistral, OpenRouter**; Zamolxis rotates them (least-used first, skipping any that hit their daily cap). One key per provider.
+- **Other paid providers** — use **OpenAI** or **DeepSeek** (billed to you) by adding their id to the chain. Optional, never required.
+- **Claude (subscription)** — the default top tier and the agentic core; routing within the Claude family (Opus/Sonnet/Haiku) is free on your plan.
+
+You order these in the web **Providers** panel — e.g. `local, freecloud, claude` (default), `local, freecloud` (**no Claude** — local + free only), or `local, deepseek, claude` (a paid provider in the middle). The tool-using core runs on the Claude Agent SDK, so `claude login` is required, but everyday turns can be served by the local model or free/other providers to **conserve — or entirely avoid — subscription usage**. See [Local model](#local-model-optional-easy-task-offload) below for the full routing details.
 
 ## Install
 
