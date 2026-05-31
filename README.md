@@ -264,3 +264,7 @@ The feature set is now complete across memory, skills, scheduling, delegation, m
 ## Requirements
 
 Node ≥ 20, and a logged-in Claude Code (`claude login`) with a Pro/Max subscription. Requires `@anthropic-ai/claude-agent-sdk` ≥ 0.3 (earlier 0.1.x has a tool-call serialization bug).
+
+## License
+
+Released under the [MIT License](LICENSE). See the [Disclaimer](#disclaimer) above — the software is provided "as is", without warranty, and you are responsible for complying with the terms of service of any providers you connect.
