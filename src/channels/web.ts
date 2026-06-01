@@ -1,7 +1,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn, execFile } from 'node:child_process';
+import { spawn, execFile, spawnSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
@@ -44,20 +44,36 @@ function buildInfo(): { started: number; built: number; stale: boolean } {
 // blocks a request; a non-git install or an offline box just reports isRepo:false / behind:0.
 const REPO_ROOT = path.dirname(DIST_DIR); // dist/.. = repo root
 const pexec = promisify(execFile);
+// Resolve a usable `git` even when the daemon's PATH is minimal (common on macOS when started
+// detached / via a launcher — git is at /usr/bin/git but may not be on the inherited PATH).
+function resolveGit(): string {
+  const cands = process.platform === 'win32' ? ['git'] : ['git', '/usr/bin/git', '/opt/homebrew/bin/git', '/usr/local/bin/git'];
+  for (const c of cands) {
+    try {
+      if (spawnSync(c, ['--version'], { stdio: 'ignore', windowsHide: true }).status === 0) return c;
+    } catch {
+      /* try next candidate */
+    }
+  }
+  return 'git';
+}
+const GIT_BIN = resolveGit();
 type UpdateState = { isRepo: boolean; behind: number; local: string; remote: string; branch: string; checkedAt: number };
 let UPDATE: UpdateState = { isRepo: false, behind: 0, local: '', remote: '', branch: '', checkedAt: 0 };
 let UPDATE_CHECKING = false;
 async function refreshUpdate(): Promise<void> {
   if (UPDATE_CHECKING) return;
   UPDATE_CHECKING = true;
-  const git = (args: string[], timeout = 8000) => pexec('git', args, { cwd: REPO_ROOT, timeout, windowsHide: true });
+  const git = (args: string[], timeout = 8000) => pexec(GIT_BIN, args, { cwd: REPO_ROOT, timeout, windowsHide: true });
   try {
     await git(['rev-parse', '--is-inside-work-tree']);
     const branch = (await git(['rev-parse', '--abbrev-ref', 'HEAD'])).stdout.trim();
+    let fetched = true;
     try {
       await git(['fetch', '--quiet', 'origin'], 30000);
-    } catch {
-      /* offline or no remote: fall back to whatever refs we already have */
+    } catch (err) {
+      fetched = false; // offline, no remote, or git unusable — fall back to existing refs
+      logger.debug({ err: String(err) }, 'update-check: git fetch failed');
     }
     const local = (await git(['rev-parse', 'HEAD'])).stdout.trim();
     let remote = '';
@@ -65,12 +81,14 @@ async function refreshUpdate(): Promise<void> {
     try {
       remote = (await git(['rev-parse', '@{u}'])).stdout.trim();
       behind = parseInt((await git(['rev-list', '--count', 'HEAD..@{u}'])).stdout.trim(), 10) || 0;
-    } catch {
-      /* current branch has no upstream configured */
+    } catch (err) {
+      logger.debug({ err: String(err) }, 'update-check: no upstream branch configured');
     }
     UPDATE = { isRepo: true, behind, local: local.slice(0, 7), remote: remote.slice(0, 7), branch, checkedAt: Date.now() };
-  } catch {
+    logger.info({ branch, behind, local: UPDATE.local, remote: UPDATE.remote, fetched, gitBin: GIT_BIN }, 'update-check');
+  } catch (err) {
     UPDATE = { isRepo: false, behind: 0, local: '', remote: '', branch: '', checkedAt: Date.now() };
+    logger.info({ err: String(err), gitBin: GIT_BIN, repoRoot: REPO_ROOT }, 'update-check: not a git checkout or git unavailable');
   } finally {
     UPDATE_CHECKING = false;
   }
