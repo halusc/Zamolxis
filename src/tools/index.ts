@@ -367,6 +367,22 @@ export function buildToolServers(ctx: ToolContext, deps: ToolDeps): Record<strin
       }
     },
   );
+  const scheduleAgent = tool(
+    'schedule_agent',
+    'Run an existing agent on a recurring schedule (cron) or once (at an ISO time). Its result is delivered back to this conversation.',
+    {
+      name: z.string().describe('The agent name'),
+      cron: z.string().optional().describe('Cron expression, e.g. "0 8 * * 1-5" for weekdays 8am'),
+      at: z.string().optional().describe('ISO-8601 timestamp for a one-time run'),
+      task: z.string().optional().describe('Task to give the agent each run (optional; uses its job)'),
+    },
+    async (args) => {
+      if (!deps.agentStore?.get(args.name)) return text(`No agent named "${args.name}".`);
+      if (!args.cron && !args.at) return text('Provide either `cron` (recurring) or `at` (one-shot).');
+      const job = deps.scheduler.add({ name: `agent:${args.name}`, agent: args.name, prompt: args.task || '', cron: args.cron, at: args.at, channel: ctx.channel, chatId: ctx.chatId, conversationKey: ctx.conversationKey });
+      return text(`Scheduled agent "${args.name}" (${args.cron || args.at}). Cancel with cancel_scheduled and id ${job.id}.`);
+    },
+  );
 
   return {
     zamolxis: createSdkMcpServer({
@@ -376,6 +392,7 @@ export function buildToolServers(ctx: ToolContext, deps: ToolDeps): Record<strin
         createAgent,
         listAgents,
         runAgentTool,
+        scheduleAgent,
         scheduleTask,
         listScheduled,
         cancelScheduled,
