@@ -13,6 +13,7 @@ import type { TabsManager } from '../core/tabs.js';
 import type { UsageTracker } from '../core/usage.js';
 import type { SkillsManager } from '../skills/manager.js';
 import type { MemoryManager } from '../core/memory.js';
+import type { AgentStore } from '../core/agents.js';
 import { packSetup, type PackParts } from '../core/pack.js';
 import { oauthExpiry } from '../core/auth.js';
 import { effectiveName, tempName } from '../core/displayName.js';
@@ -120,6 +121,8 @@ export class WebChannel implements Channel {
     private readonly usage?: UsageTracker,
     private readonly skills?: SkillsManager,
     private readonly memory?: MemoryManager,
+    private readonly agentStore?: AgentStore,
+    private readonly runAgent?: (name: string, task?: string) => Promise<{ reply: string }>,
   ) {
     const { bind, authToken } = config.web;
     if (!LOOPBACK.includes(bind) && !authToken) {
@@ -428,6 +431,37 @@ export class WebChannel implements Channel {
       });
       return;
     }
+    if (url.pathname === '/api/agents') {
+      if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
+      if (req.method === 'GET') return this.json(res, 200, this.agentStore?.list() ?? []);
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', async () => {
+          try {
+            const o = JSON.parse(body || '{}');
+            const action = String(o.action || '');
+            if (!this.agentStore) return this.json(res, 400, { error: 'agents unavailable' });
+            if (action === 'create') {
+              const name = this.agentStore.upsert({ name: String(o.name || ''), job: String(o.job || ''), tools: Array.isArray(o.tools) ? o.tools : undefined, model: o.model ? String(o.model) : undefined, canElevate: typeof o.canElevate === 'boolean' ? o.canElevate : undefined });
+              return this.json(res, 200, { ok: true, name, agents: this.agentStore.list() });
+            }
+            if (action === 'delete') {
+              return this.json(res, 200, { ok: this.agentStore.remove(String(o.name || '')), agents: this.agentStore.list() });
+            }
+            if (action === 'run') {
+              if (!this.runAgent) return this.json(res, 400, { error: 'cannot run agents here' });
+              const r = await this.runAgent(String(o.name || ''), o.task ? String(o.task) : undefined);
+              return this.json(res, 200, { ok: true, reply: r.reply });
+            }
+            return this.json(res, 400, { error: 'unknown action' });
+          } catch (err) {
+            this.json(res, 400, { error: String(err) });
+          }
+        });
+        return;
+      }
+    }
     if (url.pathname === '/api/skills') {
       if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
       if (req.method === 'GET') return this.json(res, 200, this.skills?.detailsAll() ?? []);
@@ -714,8 +748,23 @@ function renderRail(){var box=el('provrail');if(!box)return;var d=RAIL;if(!d){bo
     } else h+=railItem(d,tok);
   });
   h+='<div id="raillink" style="color:var(--mut);font-size:10px;margin:9px 4px 4px;cursor:pointer">edit in Providers &#8594;</div>';
-  box.innerHTML=h;var lk=el('raillink');if(lk)lk.onclick=function(){el('provbtn').click()}}
+  h+='<div style="text-transform:uppercase;font-size:10px;letter-spacing:.5px;color:var(--mut);margin:14px 4px 6px;border-top:1px solid var(--line);padding-top:10px">Agents</div><div id="agentrail"></div><div id="newagent" style="color:var(--accent);font-size:11px;margin:6px 4px;cursor:pointer">+ new agent</div>';
+  box.innerHTML=h;var lk=el('raillink');if(lk)lk.onclick=function(){el('provbtn').click()};var na=el('newagent');if(na)na.onclick=createAgentPrompt;loadAgents()}
 function loadRail(){fetch('/api/providers',{headers:hdrs()}).then(function(r){return r.ok?r.json():null}).then(function(d){if(d){RAIL=d;renderRail();rebuildRouteSelect();if(LASTD)renderModels(LASTD)}}).catch(function(){})}
+var AGENTS=[];
+function loadAgents(){fetch('/api/agents',{headers:hdrs()}).then(function(r){return r.ok?r.json():[]}).then(function(a){AGENTS=a||[];renderAgents()}).catch(function(){})}
+function renderAgents(){var box=el('agentrail');if(!box)return;
+  if(!AGENTS.length){box.innerHTML='<div style="color:var(--mut);font-size:11px;padding:2px 7px">none yet</div>';return}
+  box.innerHTML=AGENTS.map(function(a){return '<div style="padding:4px 7px"><div style="font-size:12px" title="'+esc(a.job)+'">'+esc(a.label||a.name)+' <span style="color:var(--mut);font-size:10px">['+esc(a.model)+(a.canElevate?'\\u2191':'')+']</span></div><div style="margin-top:1px"><span class="arun" data-n="'+esc(a.name)+'" style="color:var(--accent);cursor:pointer;font-size:11px">run</span><span class="adel" data-n="'+esc(a.name)+'" style="color:#e88;cursor:pointer;font-size:11px;margin-left:10px">delete</span></div></div>'}).join('');
+  [].slice.call(box.querySelectorAll('.arun')).forEach(function(x){x.onclick=function(){runAgentUI(x.getAttribute('data-n'))}});
+  [].slice.call(box.querySelectorAll('.adel')).forEach(function(x){x.onclick=function(){var n=x.getAttribute('data-n');if(!confirm('Delete agent "'+n+'"?'))return;fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'delete',name:n})}).then(function(){loadAgents()})}})}
+function runAgentUI(name){var task=prompt('Task for "'+name+'" (blank = its standard job):','');if(task===null)return;switchView('chat');var m=add('bot',name,'(running '+name+'...)');setStatus('agent '+name+' running...');
+  fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'run',name:name,task:task||undefined})}).then(function(r){return r.ok?r.json():null}).then(function(d){setStatus('');if(m)m.textContent=(d&&d.reply)?d.reply:'(no reply)'}).catch(function(){setStatus('');if(m)m.textContent='(agent run failed)'})}
+function createAgentPrompt(){var name=prompt('New agent name:');if(!name)return;var job=prompt('Its job / instructions:');if(!job)return;
+  var model=prompt('Model/tier: auto | local | freecloud | groq | google | cerebras | mistral | openrouter | deepseek | claude','auto')||'auto';
+  var tools=prompt('Tools it may use (comma-separated; blank = all default), e.g. web_search,read_url,http_get','');
+  var toolArr=tools?tools.split(',').map(function(s){return s.trim()}).filter(Boolean):undefined;
+  fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'create',name:name,job:job,model:model,tools:toolArr,canElevate:true})}).then(function(r){return r.json()}).then(function(){showToast('Agent created.');setTimeout(hideToast,1800);loadAgents()}).catch(function(){showToast('Create failed.')})}
 // Per-chat route picker: Auto, Local, every CONFIGURED provider, Free (rotate), Claude.
 function rebuildRouteSelect(){var sel=el('route');if(!sel||!RAIL)return;var d=RAIL;var cur=sel.value||curRoute();
   var opts=[['auto','Auto']];
