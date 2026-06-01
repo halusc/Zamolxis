@@ -753,7 +753,16 @@ export class Engine {
       for await (const msg of query({ prompt: inputStream(), options })) {
         switch (msg.type) {
           case 'system':
-            if (msg.subtype === 'init') sessionId = msg.session_id;
+            if (msg.subtype === 'init') {
+              sessionId = msg.session_id;
+              // Which credential path did the engine pick? This is THE diagnostic for "Claude
+              // doesn't work" (esp. on macOS): expect a subscription/oauth source. If it shows
+              // 'none' or an api-key source, the subscription token isn't being read — on macOS
+              // run `claude setup-token` and set CLAUDE_CODE_OAUTH_TOKEN in .env (the Keychain
+              // that `claude login` writes isn't readable by this spawned engine).
+              const src = (msg as { apiKeySource?: string }).apiKeySource;
+              logger.info({ apiKeySource: src ?? 'unknown', model: chosenModel, hasOauthToken: Boolean(process.env.CLAUDE_CODE_OAUTH_TOKEN) }, 'engine auth source');
+            }
             break;
           case 'assistant': {
             if (msg.error) {

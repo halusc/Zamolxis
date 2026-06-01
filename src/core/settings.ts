@@ -26,6 +26,7 @@ const CHANNELS = ['cli', 'telegram', 'discord', 'slack', 'whatsapp', 'signal', '
 
 /** Channel credential fields. `secret: true` => write-only (never echoed back to the browser). */
 const CRED_FIELDS: Array<{ key: string; label: string; group: string; secret: boolean }> = [
+  { key: 'CLAUDE_CODE_OAUTH_TOKEN', label: 'Claude subscription token — paste from `claude setup-token` (required on macOS)', group: 'claude', secret: true },
   { key: 'TELEGRAM_BOT_TOKEN', label: 'Telegram bot token', group: 'telegram', secret: true },
   { key: 'TELEGRAM_ALLOWED_USERS', label: 'Telegram allowed usernames/ids (comma-sep, blank = all)', group: 'telegram', secret: false },
   { key: 'DISCORD_BOT_TOKEN', label: 'Discord bot token', group: 'discord', secret: true },
@@ -266,6 +267,10 @@ export class SettingsManager {
         if (typeof v !== 'string') continue;
         if (f.secret && v === '') continue; // don't clobber a secret with a blank
         p.credentials[f.key] = v;
+        // Apply to the live environment too, so it takes effect WITHOUT a restart. This matters
+        // for CLAUDE_CODE_OAUTH_TOKEN especially: the engine reads process.env per turn, so the
+        // subscription token works on the very next message (no .env editing, no restart).
+        process.env[f.key] = v;
       }
     }
 

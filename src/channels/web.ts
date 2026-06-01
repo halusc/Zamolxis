@@ -567,6 +567,13 @@ header{display:flex;align-items:center;gap:10px;padding:11px 18px;border-bottom:
 #auth.bad{color:#e88;border-color:#a44}
 #build{font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid #a44;color:#e88;white-space:nowrap;cursor:default}
 #status{font-size:12px;color:var(--mut)}
+#modelsbar{display:flex;align-items:center;padding:5px 18px;border-bottom:1px solid var(--line);background:#15110b;overflow-x:auto}
+#modelsbar #models{flex-wrap:nowrap;white-space:nowrap}
+#toolsmenu{position:relative}
+#toolsdrop{position:absolute;right:0;top:calc(100% + 6px);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px;display:none;flex-direction:column;gap:3px;min-width:152px;z-index:30;box-shadow:0 10px 28px #000a}
+#toolsdrop.open{display:flex}
+#toolsdrop button{width:100%;text-align:left;background:transparent;border:none;border-radius:6px;padding:8px 11px;font-size:13px}
+#toolsdrop button:hover{background:var(--panel2);color:var(--accent)}
 button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 12px;cursor:pointer;font:inherit;font-size:13px;transition:.15s}
 button:hover{border-color:var(--accent);color:var(--accent)}
 #tabbar{display:flex;gap:6px;align-items:center;padding:8px 18px;border-bottom:1px solid var(--line);background:#120f0a;overflow-x:auto}
@@ -650,9 +657,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 </style></head><body>
 <div id="toast"></div>
 <header><svg id="emblem" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="eg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8c87a"/><stop offset="1" stop-color="#b8893f"/></linearGradient></defs><path d="M32 3 58 18 V46 L32 61 6 46 V18 Z" fill="#1a150d" stroke="url(#eg)" stroke-width="3" stroke-linejoin="round"/><path d="M22 22 H42 L24 40 H43" fill="none" stroke="url(#eg)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><b id="brand">__AGENT_NAME__</b>
-  <span id="models"></span>
   <span id="clock"></span><span id="build" title="" style="display:none"></span><span id="auth" title="">login ...</span><span id="status">connecting...</span>
-  <button id="chats">Chats</button><button id="skillsbtn">Skills</button><button id="provbtn">Providers</button><button id="mem">Memory</button><button id="cog">Settings</button></header>
+  <div id="toolsmenu"><button id="toolsbtn">Tools ▾</button><div id="toolsdrop"><button id="chats">Chats</button><button id="skillsbtn">Skills</button><button id="provbtn">Providers</button><button id="mem">Memory</button><button id="cog">Settings</button></div></div></header>
+<div id="modelsbar"><span id="models"></span></div>
 <div id="tabbar"></div>
 <div id="main">
   <aside id="provrail"></aside>
@@ -839,11 +846,16 @@ el('in').addEventListener('keydown',function(e){var n=el('in');
     if(histPos<inHist.length-1){histPos++;n.value=inHist[histPos]}else{histPos=-1;n.value=histDraft}
     e.preventDefault();
   }});
-el('chats').onclick=function(){renderThreads();el('threadpanel').classList.toggle('open')};
+// Only ONE panel/overlay open at a time (prevents Settings opening UNDER Memory, etc.).
+function closePanels(){['panel','mempanel','skillpanel','provpanel','threadpanel'].forEach(function(id){var e=el(id);if(e)e.classList.remove('open')})}
+function closeTools(){var d=el('toolsdrop');if(d)d.classList.remove('open')}
+el('toolsbtn').onclick=function(e){e.stopPropagation();el('toolsdrop').classList.toggle('open')};
+document.addEventListener('click',function(){closeTools()});
+el('chats').onclick=function(){var open=el('threadpanel').classList.contains('open');closePanels();closeTools();if(!open){renderThreads();el('threadpanel').classList.add('open')}};
 el('newchat').onclick=newChat;
-el('cog').onclick=function(){el('panel').classList.add('open');loadSettings()};
+el('cog').onclick=function(){closePanels();closeTools();el('panel').classList.add('open');loadSettings()};
 el('close').onclick=function(){el('panel').classList.remove('open')};
-el('mem').onclick=function(){loadMemory();el('mempanel').classList.add('open')};
+el('mem').onclick=function(){closePanels();closeTools();loadMemory();el('mempanel').classList.add('open')};
 el('memclose').onclick=function(){el('mempanel').classList.remove('open')};
 /* ---- skills ---- */
 function renderSkills(list){var arr=list||[];
@@ -881,7 +893,7 @@ function importShown(){var names=[];
   fetch('/api/skills',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'import',slugs:names})}).then(function(r){return r.json()}).then(function(d){if(d&&d.skills)renderSkills(d.skills);showToast('Imported '+names.length+' skill(s).');setTimeout(hideToast,2400)}).catch(function(){showToast('Import failed.');setTimeout(hideToast,2000)})}
 function loadSkills(){fetch('/api/skills',{headers:hdrs()}).then(function(r){return r.ok?r.json():null}).then(function(d){renderSkills(d)})}
 function skillAction(action,slug){fetch('/api/skills',{method:'POST',headers:hdrs(),body:JSON.stringify({action:action,slug:slug})}).then(function(r){return r.json()}).then(function(d){if(d&&d.skills)renderSkills(d.skills)}).catch(function(){})}
-el('skillsbtn').onclick=function(){loadSkills();el('skillpanel').classList.add('open')};
+el('skillsbtn').onclick=function(){closePanels();closeTools();loadSkills();el('skillpanel').classList.add('open')};
 el('skillclose').onclick=function(){el('skillpanel').classList.remove('open')};
 /* ---- AI providers ---- */
 function provRow(p){var lim=(p.kind==='free'&&p.freeDaily&&p.used>=p.freeDaily);
@@ -941,7 +953,7 @@ function loadProviders(){fetch('/api/providers',{headers:hdrs()}).then(function(
 function saveProviders(){var creds={};Array.prototype.forEach.call(document.querySelectorAll('[id^="prov_"]'),function(n){if(n.id==='prov_chain')return;if(n.value&&n.value!==KEYMASK)creds[n.id.slice(5)]=n.value});
   fetch('/api/settings',{method:'POST',headers:hdrs(),body:JSON.stringify({live:{routeChain:el('prov_chain').value},credentials:creds})}).then(function(r){return r.json()}).then(function(s){
     if(s&&s.restartRequired){awaitingReload=true;el('provpanel').classList.remove('open');showToast('Saved. Applying and reconnecting...')}else{showToast('Saved.');loadProviders();loadRail();setTimeout(hideToast,2000)}}).catch(function(){})}
-el('provbtn').onclick=function(){loadProviders();el('provpanel').classList.add('open')};
+el('provbtn').onclick=function(){closePanels();closeTools();loadProviders();el('provpanel').classList.add('open')};
 el('provclose').onclick=function(){el('provpanel').classList.remove('open')};
 el('provsave').onclick=saveProviders;
 /* ---- tabs ---- */
@@ -980,6 +992,9 @@ function loadSettings(){fetch('/api/settings',{headers:hdrs()}).then(function(r)
     if(r.status===401){var t=prompt('Auth token required:');if(t){token=t;localStorage.zx_token=t;openWs();loadSettings()}return null}
     return r.json()}).then(function(s){if(!s)return;renderSettings(s)})}
 function renderSettings(s){var L=s.live,m=s.meta,h='';
+  h+=sec('Claude subscription (login)');
+  h+='<div style="font-size:12px;color:var(--mut);margin-bottom:6px">Zamolxis answers on your Claude Pro/Max subscription. On macOS the usual <code>claude login</code> stores the token in the Keychain, which the background engine cannot read - so paste a token here instead. In a terminal run <code>claude setup-token</code>, copy the line that starts with <code>sk-ant-oat01-</code>, and paste it below. Applies immediately on Save - no restart, no file editing.</div>';
+  h+=credInputs('claude');
   h+=sec('Engine (applies on next message)');
   h+='<label>Agent name (shown everywhere)</label>'+inp('live_agentName',L.agentName);
   h+='<label>Model</label>'+sel('live_model',m.models,L.model);
