@@ -820,14 +820,14 @@ function fmtTime(ts){try{return new Date(Number(ts)).toLocaleTimeString([], {hou
    is re-renderable so a name change relabels every past bubble too. */
 function renderWho(w){if(!w)return;var t=w.dataset.ts?fmtTime(w.dataset.ts):'';
   if(w.dataset.role==='you'){w.textContent='you'+(t?' · '+t:'')}
-  else{var s=w.dataset.secs,tok=w.dataset.tok,via=w.dataset.via;var x=BOT_LABEL+(t?' · '+t:'');if(s)x+=' · '+s+'s';if(tok)x+=' · '+tok+' tok';if(via)x+=' · via '+via;w.textContent=x}}
+  else{var s=w.dataset.secs,tok=w.dataset.tok,via=w.dataset.via;var x=(w.dataset.label||BOT_LABEL)+(t?' · '+t:'');if(s)x+=' · '+s+'s';if(tok)x+=' · '+tok+' tok';if(via)x+=' · via '+via;w.textContent=x}}
 /* Human label for the model that produced an answer (from usage.last.model). */
 function viaLabel(id){if(!id)return '';id=String(id);
   var m=id.match(/^(?:free|paid):([^:]+):/);if(m){var pp=(RAIL&&RAIL.providers||[]).filter(function(p){return p.id===m[1]})[0];return pp?pp.label:m[1]}
   if(id.indexOf('local:')===0)return 'Local';
   if(/claude|opus|sonnet|haiku/i.test(id))return 'Claude '+shortModel(id);
   return shortModel(id)}
-function add(cls,who,text){var w=document.createElement('div');w.className='who';w.dataset.role=(cls==='user'?'you':'bot');w.dataset.ts=String(Date.now());renderWho(w);var m=document.createElement('div');m.className='msg '+cls;m.textContent=text;el('loginner').appendChild(w);el('loginner').appendChild(m);el('log').scrollTop=el('log').scrollHeight;m.whoEl=w;return m}
+function add(cls,who,text){var w=document.createElement('div');w.className='who';w.dataset.role=(cls==='user'?'you':'bot');w.dataset.ts=String(Date.now());if(cls!=='user'&&who&&who!==BOT_LABEL)w.dataset.label=who;renderWho(w);var m=document.createElement('div');m.className='msg '+cls;m.textContent=text;el('loginner').appendChild(w);el('loginner').appendChild(m);el('log').scrollTop=el('log').scrollHeight;m.whoEl=w;return m}
 var genStart=0,genTimer=null;
 function setMeta(w,secs,tokens,via){if(!w)return;if(secs!=null)w.dataset.secs=secs;if(tokens!=null)w.dataset.tok=fmtNum(tokens);if(via!=null)w.dataset.via=via;renderWho(w)}
 function tickGen(){if(!cur||!cur.whoEl)return;setMeta(cur.whoEl,((Date.now()-genStart)/1000).toFixed(1),null)}
