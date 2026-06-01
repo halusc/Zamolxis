@@ -88,16 +88,35 @@ function sanitizeKey(key: string): string {
   return key.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120);
 }
 
-/** Did the local model ask to hand off? Small models rarely obey "reply EXACTLY ESCALATE" —
- *  they emit "ESCALATE: ...", "**ESCALATE**", "I need to ESCALATE this", "<ESCALATE>", etc.
- *  So we treat the ALL-CAPS control token appearing as a standalone word ANYWHERE as a hand-off
- *  (case-SENSITIVE, so ordinary lowercase prose that merely mentions escalating doesn't trigger
- *  it), plus a reply that is essentially just the word "escalate", plus an empty reply. */
+/** Levenshtein edit distance (tiny strings only). */
+function editDistance(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  const d: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) d[i]![0] = i;
+  for (let j = 0; j <= n; j++) d[0]![j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      d[i]![j] = Math.min(d[i - 1]![j]! + 1, d[i]![j - 1]! + 1, d[i - 1]![j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+  }
+  return d[m]![n]!;
+}
+
+/** Did the local model ask to hand off? It was told to reply "ESCALATE", but small models rarely
+ *  comply exactly — they wrap it ("**ESCALATE**", "<ESCALATE>"), add a reason ("ESCALATE: needs
+ *  web"), bury it in a sentence ("I need to ESCALATE this"), OR MISSPELL it ("ESCOALATE",
+ *  "ESCOLATE"). We treat any ALL-CAPS standalone token that is ESCALATE or a near miss (ESC-
+ *  prefix, edit distance <= 2) as a hand-off — case-SENSITIVE caps, so ordinary lowercase prose
+ *  that merely mentions escalating stays a normal answer. An empty reply also escalates. */
 function wantsEscalate(text: string): boolean {
   const t = (text ?? '').trim();
   if (!t) return true;
-  // ALL-CAPS token as a standalone word anywhere: ESCALATE, <ESCALATE>, **ESCALATE**, "ESCALATE:", "...ESCALATE this".
-  if (/(^|[^A-Za-z])ESCALATE([^A-Za-z]|$)/.test(t)) return true;
+  for (const w of t.split(/[^A-Za-z]+/)) {
+    if (w.length >= 5 && w.length <= 12 && w === w.toUpperCase() && w.startsWith('ESC')) {
+      if (w === 'ESCALATE' || editDistance(w, 'ESCALATE') <= 2) return true;
+    }
+  }
   // Whole reply is basically just "escalate" (any case), possibly wrapped in punctuation/markdown/quotes.
   if (/^[\s>*_`"'[(<:.\-]*escalate[\s>*_`"'\])>:.!\-]*$/i.test(t)) return true;
   return false;
