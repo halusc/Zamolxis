@@ -88,13 +88,18 @@ function sanitizeKey(key: string): string {
   return key.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120);
 }
 
-/** Did the local model ask to hand off? Tolerant of how small models phrase it:
- *  "ESCALATE", "<ESCALATE>", "[ESCALATE].", or an empty reply all count. */
+/** Did the local model ask to hand off? Small models rarely obey "reply EXACTLY ESCALATE" —
+ *  they emit "ESCALATE: ...", "**ESCALATE**", "I need to ESCALATE this", "<ESCALATE>", etc.
+ *  So we treat the ALL-CAPS control token appearing as a standalone word ANYWHERE as a hand-off
+ *  (case-SENSITIVE, so ordinary lowercase prose that merely mentions escalating doesn't trigger
+ *  it), plus a reply that is essentially just the word "escalate", plus an empty reply. */
 function wantsEscalate(text: string): boolean {
   const t = (text ?? '').trim();
   if (!t) return true;
-  if (/<ESCALATE>/i.test(t)) return true;
-  if (/^[<[(]?\s*escalate\s*[>\])]?\s*[.!]?$/i.test(t)) return true; // reply is essentially just the word
+  // ALL-CAPS token as a standalone word anywhere: ESCALATE, <ESCALATE>, **ESCALATE**, "ESCALATE:", "...ESCALATE this".
+  if (/(^|[^A-Za-z])ESCALATE([^A-Za-z]|$)/.test(t)) return true;
+  // Whole reply is basically just "escalate" (any case), possibly wrapped in punctuation/markdown/quotes.
+  if (/^[\s>*_`"'[(<:.\-]*escalate[\s>*_`"'\])>:.!\-]*$/i.test(t)) return true;
   return false;
 }
 
