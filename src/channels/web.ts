@@ -347,6 +347,12 @@ export class WebChannel implements Channel {
       }
       return;
     }
+    if (url.pathname === '/api/checkupdate' && req.method === 'POST') {
+      if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
+      // Force an immediate git fetch + behind-count (bypasses the ~5-min poll cache) and return it.
+      refreshUpdate().then(() => this.json(res, 200, UPDATE)).catch((err) => this.json(res, 500, { error: String(err) }));
+      return;
+    }
     if (url.pathname === '/api/update' && req.method === 'POST') {
       if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
       this.json(res, 200, { ok: true, updating: true });
@@ -999,6 +1005,8 @@ function renderSettings(s){var L=s.live,m=s.meta,h='';
   h+=sec('Claude subscription (login)');
   h+='<div style="font-size:12px;color:var(--mut);margin-bottom:6px">Zamolxis answers on your Claude Pro/Max subscription. On macOS the usual <code>claude login</code> stores the token in the Keychain, which the background engine cannot read - so paste a token here instead. In a terminal run <code>claude setup-token</code>, copy the line that starts with <code>sk-ant-oat01-</code>, and paste it below. Applies immediately on Save - no restart, no file editing.</div>';
   h+=credInputs('claude');
+  h+=sec('Updates');
+  h+='<button type="button" id="checkupd">Check for updates</button> <span id="updres" style="font-size:12px;color:var(--mut)">checks GitHub for a newer version.</span>';
   h+=sec('Engine (applies on next message)');
   h+='<label>Agent name (shown everywhere)</label>'+inp('live_agentName',L.agentName);
   h+='<label>Model</label>'+sel('live_model',m.models,L.model);
@@ -1057,6 +1065,12 @@ function renderSettings(s){var L=s.live,m=s.meta,h='';
   el('settings').innerHTML=h;el('ro').innerHTML='Data dir: '+m.dataDir+'<br>'+m.restartNote;fetchUsage();
   var pkb=el('packbtn');if(pkb)pkb.onclick=doPack;
   var unb=el('uninstallbtn');if(unb)unb.onclick=doUninstall;
+  var cub=el('checkupd');if(cub)cub.onclick=function(){var r=el('updres');cub.disabled=true;if(r)r.textContent='checking...';
+    fetch('/api/checkupdate',{method:'POST',headers:hdrs()}).then(function(x){return x.ok?x.json():null}).then(function(u){cub.disabled=false;if(!r)return;
+      if(!u||!u.isRepo){r.innerHTML='Not a git install - can\\'t auto-update here.';return}
+      if(u.behind>0){r.innerHTML='<b style="color:var(--accent)">Update available: '+u.behind+' new.</b> ';var ub=document.createElement('button');ub.type='button';ub.textContent='Update now';ub.style.marginLeft='6px';ub.onclick=doUpdate;r.appendChild(ub);fetchStatus()}
+      else{r.textContent='You are up to date (build matches GitHub).'}
+    }).catch(function(){cub.disabled=false;if(r)r.textContent='check failed.'})};
   fetch('/api/install',{headers:hdrs()}).then(function(r){return r.ok?r.json():null}).then(function(d){var st=el('dockerstat');if(!st||!d)return;
     if(d.docker){st.innerHTML=dotHtml(C_OK,'installed')+'<span>Docker is installed.</span>'}
     else{st.innerHTML=dotHtml(C_OFF,'not installed')+'<span>Docker not found on PATH.</span>';var b=el('dockerinst');if(b){b.style.display='';b.onclick=function(){doInstall('docker','instout_docker',b)}}}}).catch(function(){});
