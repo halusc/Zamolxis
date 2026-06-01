@@ -12,6 +12,7 @@ import type { UsageTracker } from '../core/usage.js';
 import { runWebSearch, localSearchAvailable, runHaService, haConfigured } from '../core/localTools.js';
 import { setTempName } from '../core/displayName.js';
 import { buildPaidTools } from './paid.js';
+import type { AgentStore } from '../core/agents.js';
 
 /** Live conversation context, captured per agent turn so tools deliver to the right place. */
 export interface ToolContext {
@@ -35,6 +36,12 @@ export interface ToolDeps {
   dataDir: string;
   /** Shared skills directory (for packing the setup). */
   skillsDir: string;
+  /** User-defined agents store (create/list). */
+  agentStore?: AgentStore;
+  /** Run a named user-defined agent (late-bound to the engine). */
+  runAgent?: (name: string, task?: string) => Promise<string>;
+  /** Deliver a message from an agent to another agent or the user (late-bound to the engine). */
+  sendAgentMessage?: (from: string, to: string, text: string) => Promise<string>;
 }
 
 const text = (s: string) => ({ content: [{ type: 'text' as const, text: s }] });
@@ -324,11 +331,81 @@ export function buildToolServers(ctx: ToolContext, deps: ToolDeps): Record<strin
     );
   }
 
+  const createAgent = tool(
+    'create_agent',
+    'Create or update a named agent: a focused job that runs on a chosen model/tier with a chosen set of tools. Use when the user says e.g. "make an agent that uses web_search to do X".',
+    {
+      name: z.string().describe('Short name/slug for the agent'),
+      job: z.string().describe('The role and instructions: what this agent is and does'),
+      tools: z.array(z.string()).optional().describe('Tool names the agent may use, e.g. ["web_search","read_url","http_get"]; omit for the default toolset'),
+      model: z.string().optional().describe('Where it runs: auto | local | freecloud | a provider id (groq, google, cerebras, mistral, openrouter, deepseek, openai) | claude. Default auto.'),
+      canElevate: z.boolean().optional().describe('May it escalate to the smartest model when stuck (default true)'),
+    },
+    async (args) => {
+      if (!deps.agentStore) return text('Agents are not available in this build.');
+      try {
+        const n = deps.agentStore.upsert({ name: args.name, job: args.job, tools: args.tools, model: args.model, canElevate: args.canElevate });
+        return text(`Agent "${n}" saved (model: ${args.model || 'auto'}). Run it with run_agent, or from the Agents list in the UI.`);
+      } catch (e) {
+        return text('Could not create agent: ' + String(e));
+      }
+    },
+  );
+  const listAgents = tool('list_agents', 'List the user-defined agents.', {}, async () => {
+    if (!deps.agentStore) return text('Agents are not available in this build.');
+    const a = deps.agentStore.list();
+    return text(a.length ? a.map((x) => `- ${x.name} [${x.model}]: ${x.job.slice(0, 90)}`).join('\n') : 'No agents defined yet.');
+  });
+  const runAgentTool = tool(
+    'run_agent',
+    'Run a named agent on a task right now and return its result.',
+    { name: z.string().describe('The agent name'), task: z.string().optional().describe('What to do (optional; uses the agent job if omitted)') },
+    async (args) => {
+      if (!deps.runAgent) return text('Cannot run agents from here.');
+      try {
+        return text(await deps.runAgent(args.name, args.task));
+      } catch (e) {
+        return text('Agent run failed: ' + String(e));
+      }
+    },
+  );
+  const scheduleAgent = tool(
+    'schedule_agent',
+    'Run an existing agent on a recurring schedule (cron) or once (at an ISO time). Its result is delivered back to this conversation.',
+    {
+      name: z.string().describe('The agent name'),
+      cron: z.string().optional().describe('Cron expression, e.g. "0 8 * * 1-5" for weekdays 8am'),
+      at: z.string().optional().describe('ISO-8601 timestamp for a one-time run'),
+      task: z.string().optional().describe('Task to give the agent each run (optional; uses its job)'),
+    },
+    async (args) => {
+      if (!deps.agentStore?.get(args.name)) return text(`No agent named "${args.name}".`);
+      if (!args.cron && !args.at) return text('Provide either `cron` (recurring) or `at` (one-shot).');
+      const job = deps.scheduler.add({ name: `agent:${args.name}`, agent: args.name, prompt: args.task || '', cron: args.cron, at: args.at, channel: ctx.channel, chatId: ctx.chatId, conversationKey: ctx.conversationKey });
+      return text(`Scheduled agent "${args.name}" (${args.cron || args.at}). Cancel with cancel_scheduled and id ${job.id}.`);
+    },
+  );
+  const sendMessage = tool(
+    'send_message',
+    'Send a message to another agent (by name) or to the user. Agents use this to report results/progress, or to hand work to another agent.',
+    { to: z.string().describe('Recipient: an agent name, or "user"'), text: z.string().describe('The message') },
+    async (args) => {
+      if (!deps.sendAgentMessage) return text('Messaging is not available in this build.');
+      const from = ctx.conversationKey.startsWith('agent:') ? ctx.conversationKey.slice('agent:'.length) : 'assistant';
+      return text(await deps.sendAgentMessage(from, args.to, args.text));
+    },
+  );
+
   return {
     zamolxis: createSdkMcpServer({
       name: 'zamolxis',
       version: '0.1.0',
       tools: [
+        createAgent,
+        listAgents,
+        runAgentTool,
+        scheduleAgent,
+        sendMessage,
         scheduleTask,
         listScheduled,
         cancelScheduled,

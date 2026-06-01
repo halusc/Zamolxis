@@ -15,6 +15,8 @@ export interface ScheduledJob {
   at?: string;
   /** The instruction handed to the agent when the job fires. */
   prompt: string;
+  /** If set, run this named user-defined agent (its job/tools/model/elevation) instead of a raw prompt. */
+  agent?: string;
   /** Where to deliver the result. */
   channel: string;
   chatId: string;
@@ -81,15 +83,17 @@ export class Scheduler {
     if (!job || !this.engine || !this.channels) return;
     logger.info({ id, name: job.name }, 'job firing');
     try {
-      const result = await this.engine.run({
-        conversationKey: job.conversationKey,
-        text: job.prompt,
-        channel: job.channel,
-        chatId: job.chatId,
-        displayName: `scheduler:${job.name}`,
-      });
+      const result = job.agent
+        ? await this.engine.runAgent(job.agent, job.prompt)
+        : await this.engine.run({
+            conversationKey: job.conversationKey,
+            text: job.prompt,
+            channel: job.channel,
+            chatId: job.chatId,
+            displayName: `scheduler:${job.name}`,
+          });
       const channel = this.channels.get(job.channel);
-      if (channel) await channel.send({ chatId: job.chatId, text: result.reply });
+      if (channel) await channel.send({ chatId: job.chatId, text: job.agent ? `[agent ${job.agent}] ${result.reply}` : result.reply });
     } catch (err) {
       logger.error({ id, err: String(err) }, 'job failed');
     } finally {

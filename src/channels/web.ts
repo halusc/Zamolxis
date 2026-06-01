@@ -13,6 +13,7 @@ import type { TabsManager } from '../core/tabs.js';
 import type { UsageTracker } from '../core/usage.js';
 import type { SkillsManager } from '../skills/manager.js';
 import type { MemoryManager } from '../core/memory.js';
+import type { AgentStore } from '../core/agents.js';
 import { packSetup, type PackParts } from '../core/pack.js';
 import { oauthExpiry } from '../core/auth.js';
 import { effectiveName, tempName } from '../core/displayName.js';
@@ -144,6 +145,10 @@ export class WebChannel implements Channel {
     private readonly usage?: UsageTracker,
     private readonly skills?: SkillsManager,
     private readonly memory?: MemoryManager,
+    private readonly agentStore?: AgentStore,
+    private readonly runAgent?: (name: string, task?: string) => Promise<{ reply: string }>,
+    /** Live agent-message log (agent->agent and agent->user), polled by the Agents chat. */
+    private readonly agentMsgs?: Array<{ from: string; to: string; text: string; ts: number }>,
   ) {
     const { bind, authToken } = config.web;
     if (!LOOPBACK.includes(bind) && !authToken) {
@@ -453,6 +458,42 @@ export class WebChannel implements Channel {
       });
       return;
     }
+    if (url.pathname === '/api/agents') {
+      if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
+      if (req.method === 'GET') return this.json(res, 200, this.agentStore?.list() ?? []);
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', async () => {
+          try {
+            const o = JSON.parse(body || '{}');
+            const action = String(o.action || '');
+            if (!this.agentStore) return this.json(res, 400, { error: 'agents unavailable' });
+            if (action === 'create') {
+              const name = this.agentStore.upsert({ name: String(o.name || ''), job: String(o.job || ''), tools: Array.isArray(o.tools) ? o.tools : undefined, model: o.model ? String(o.model) : undefined, canElevate: typeof o.canElevate === 'boolean' ? o.canElevate : undefined });
+              return this.json(res, 200, { ok: true, name, agents: this.agentStore.list() });
+            }
+            if (action === 'delete') {
+              return this.json(res, 200, { ok: this.agentStore.remove(String(o.name || '')), agents: this.agentStore.list() });
+            }
+            if (action === 'run') {
+              if (!this.runAgent) return this.json(res, 400, { error: 'cannot run agents here' });
+              const r = await this.runAgent(String(o.name || ''), o.task ? String(o.task) : undefined);
+              return this.json(res, 200, { ok: true, reply: r.reply });
+            }
+            return this.json(res, 400, { error: 'unknown action' });
+          } catch (err) {
+            this.json(res, 400, { error: String(err) });
+          }
+        });
+        return;
+      }
+    }
+    if (url.pathname === '/api/agentmsgs' && req.method === 'GET') {
+      if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
+      const since = Number(url.searchParams.get('since') || 0) || 0;
+      return this.json(res, 200, (this.agentMsgs ?? []).filter((m) => m.ts > since).slice(-100));
+    }
     if (url.pathname === '/api/skills') {
       if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
       if (req.method === 'GET') return this.json(res, 200, this.skills?.detailsAll() ?? []);
@@ -740,8 +781,23 @@ function renderRail(){var box=el('provrail');if(!box)return;var d=RAIL;if(!d){bo
     } else h+=railItem(d,tok);
   });
   h+='<div id="raillink" style="color:var(--mut);font-size:10px;margin:9px 4px 4px;cursor:pointer">edit in Providers &#8594;</div>';
-  box.innerHTML=h;var lk=el('raillink');if(lk)lk.onclick=function(){el('provbtn').click()}}
+  h+='<div style="text-transform:uppercase;font-size:10px;letter-spacing:.5px;color:var(--mut);margin:14px 4px 6px;border-top:1px solid var(--line);padding-top:10px">Agents</div><div id="agentrail"></div><div id="newagent" style="color:var(--accent);font-size:11px;margin:6px 4px;cursor:pointer">+ new agent</div>';
+  box.innerHTML=h;var lk=el('raillink');if(lk)lk.onclick=function(){el('provbtn').click()};var na=el('newagent');if(na)na.onclick=createAgentPrompt;loadAgents()}
 function loadRail(){fetch('/api/providers',{headers:hdrs()}).then(function(r){return r.ok?r.json():null}).then(function(d){if(d){RAIL=d;renderRail();rebuildRouteSelect();if(LASTD)renderModels(LASTD)}}).catch(function(){})}
+var AGENTS=[];
+function loadAgents(){fetch('/api/agents',{headers:hdrs()}).then(function(r){return r.ok?r.json():[]}).then(function(a){AGENTS=a||[];renderAgents()}).catch(function(){})}
+function renderAgents(){var box=el('agentrail');if(!box)return;
+  if(!AGENTS.length){box.innerHTML='<div style="color:var(--mut);font-size:11px;padding:2px 7px">none yet</div>';return}
+  box.innerHTML=AGENTS.map(function(a){return '<div style="padding:4px 7px"><div style="font-size:12px" title="'+esc(a.job)+'">'+esc(a.label||a.name)+' <span style="color:var(--mut);font-size:10px">['+esc(a.model)+(a.canElevate?'\\u2191':'')+']</span></div><div style="margin-top:1px"><span class="arun" data-n="'+esc(a.name)+'" style="color:var(--accent);cursor:pointer;font-size:11px">run</span><span class="adel" data-n="'+esc(a.name)+'" style="color:#e88;cursor:pointer;font-size:11px;margin-left:10px">delete</span></div></div>'}).join('');
+  [].slice.call(box.querySelectorAll('.arun')).forEach(function(x){x.onclick=function(){runAgentUI(x.getAttribute('data-n'))}});
+  [].slice.call(box.querySelectorAll('.adel')).forEach(function(x){x.onclick=function(){var n=x.getAttribute('data-n');if(!confirm('Delete agent "'+n+'"?'))return;fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'delete',name:n})}).then(function(){loadAgents()})}})}
+function runAgentUI(name){var task=prompt('Task for "'+name+'" (blank = its standard job):','');if(task===null)return;switchView('chat');var m=add('bot',name,'(running '+name+'...)');setStatus('agent '+name+' running...');
+  fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'run',name:name,task:task||undefined})}).then(function(r){return r.ok?r.json():null}).then(function(d){setStatus('');if(m)m.textContent=(d&&d.reply)?d.reply:'(no reply)'}).catch(function(){setStatus('');if(m)m.textContent='(agent run failed)'})}
+function createAgentPrompt(){var name=prompt('New agent name:');if(!name)return;var job=prompt('Its job / instructions:');if(!job)return;
+  var model=prompt('Model/tier: auto | local | freecloud | groq | google | cerebras | mistral | openrouter | deepseek | claude','auto')||'auto';
+  var tools=prompt('Tools it may use (comma-separated; blank = all default), e.g. web_search,read_url,http_get','');
+  var toolArr=tools?tools.split(',').map(function(s){return s.trim()}).filter(Boolean):undefined;
+  fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'create',name:name,job:job,model:model,tools:toolArr,canElevate:true})}).then(function(r){return r.json()}).then(function(){showToast('Agent created.');setTimeout(hideToast,1800);loadAgents()}).catch(function(){showToast('Create failed.')})}
 // Per-chat route picker: Auto, Local, every CONFIGURED provider, Free (rotate), Claude.
 function rebuildRouteSelect(){var sel=el('route');if(!sel||!RAIL)return;var d=RAIL;var cur=sel.value||curRoute();
   var opts=[['auto','Auto']];
@@ -790,14 +846,14 @@ function fmtTime(ts){try{return new Date(Number(ts)).toLocaleTimeString([], {hou
    is re-renderable so a name change relabels every past bubble too. */
 function renderWho(w){if(!w)return;var t=w.dataset.ts?fmtTime(w.dataset.ts):'';
   if(w.dataset.role==='you'){w.textContent='you'+(t?' · '+t:'')}
-  else{var s=w.dataset.secs,tok=w.dataset.tok,via=w.dataset.via;var x=BOT_LABEL+(t?' · '+t:'');if(s)x+=' · '+s+'s';if(tok)x+=' · '+tok+' tok';if(via)x+=' · via '+via;w.textContent=x}}
+  else{var s=w.dataset.secs,tok=w.dataset.tok,via=w.dataset.via;var x=(w.dataset.label||BOT_LABEL)+(t?' · '+t:'');if(s)x+=' · '+s+'s';if(tok)x+=' · '+tok+' tok';if(via)x+=' · via '+via;w.textContent=x}}
 /* Human label for the model that produced an answer (from usage.last.model). */
 function viaLabel(id){if(!id)return '';id=String(id);
   var m=id.match(/^(?:free|paid):([^:]+):/);if(m){var pp=(RAIL&&RAIL.providers||[]).filter(function(p){return p.id===m[1]})[0];return pp?pp.label:m[1]}
   if(id.indexOf('local:')===0)return 'Local';
   if(/claude|opus|sonnet|haiku/i.test(id))return 'Claude '+shortModel(id);
   return shortModel(id)}
-function add(cls,who,text){var w=document.createElement('div');w.className='who';w.dataset.role=(cls==='user'?'you':'bot');w.dataset.ts=String(Date.now());renderWho(w);var m=document.createElement('div');m.className='msg '+cls;m.textContent=text;el('loginner').appendChild(w);el('loginner').appendChild(m);el('log').scrollTop=el('log').scrollHeight;m.whoEl=w;return m}
+function add(cls,who,text){var w=document.createElement('div');w.className='who';w.dataset.role=(cls==='user'?'you':'bot');w.dataset.ts=String(Date.now());if(cls!=='user'&&who&&who!==BOT_LABEL)w.dataset.label=who;renderWho(w);var m=document.createElement('div');m.className='msg '+cls;m.textContent=text;el('loginner').appendChild(w);el('loginner').appendChild(m);el('log').scrollTop=el('log').scrollHeight;m.whoEl=w;return m}
 var genStart=0,genTimer=null;
 function setMeta(w,secs,tokens,via){if(!w)return;if(secs!=null)w.dataset.secs=secs;if(tokens!=null)w.dataset.tok=fmtNum(tokens);if(via!=null)w.dataset.via=via;renderWho(w)}
 function tickGen(){if(!cur||!cur.whoEl)return;setMeta(cur.whoEl,((Date.now()-genStart)/1000).toFixed(1),null)}
@@ -1025,6 +1081,9 @@ function renderSettings(s){var L=s.live,m=s.meta,h='';
   h+=sec('Claude subscription (login)');
   h+='<div style="font-size:12px;color:var(--mut);margin-bottom:6px">Zamolxis answers on your Claude Pro/Max subscription. On macOS the usual <code>claude login</code> stores the token in the Keychain, which the background engine cannot read - so paste a token here instead. In a terminal run <code>claude setup-token</code>, copy the line that starts with <code>sk-ant-oat01-</code>, and paste it below. Applies immediately on Save - no restart, no file editing.</div>';
   h+=credInputs('claude');
+  h+=sec('Agents');
+  h+='<label class="chk" style="font-size:13px;display:block"><input type="checkbox" id="mirroragents"> Mirror agent messages into the active chat (on by default)</label>';
+  h+='<div style="font-size:11px;color:var(--mut);margin-top:2px">Create/run agents in the left rail (under Providers). Messages between agents and to you appear in the active chat when mirroring is on.</div>';
   h+=sec('Engine (applies on next message)');
   h+='<label>Agent name (shown everywhere)</label>'+inp('live_agentName',L.agentName);
   h+='<label>Model</label>'+sel('live_model',m.models,L.model);
@@ -1082,6 +1141,7 @@ function renderSettings(s){var L=s.live,m=s.meta,h='';
   h+='<button type="button" id="uninstallbtn" style="margin-top:6px;border-color:#a44;color:#e88">Uninstall '+esc(AGENT_NAME)+'</button>';
   el('settings').innerHTML=h;el('ro').innerHTML='Data dir: '+m.dataDir+'<br>'+m.restartNote;fetchUsage();
   var pkb=el('packbtn');if(pkb)pkb.onclick=doPack;
+  var ma=el('mirroragents');if(ma){ma.checked=(localStorage.zx_mirror!=='0');ma.onchange=function(){localStorage.zx_mirror=ma.checked?'1':'0'}}
   var unb=el('uninstallbtn');if(unb)unb.onclick=doUninstall;
   fetch('/api/install',{headers:hdrs()}).then(function(r){return r.ok?r.json():null}).then(function(d){var st=el('dockerstat');if(!st||!d)return;
     if(d.docker){st.innerHTML=dotHtml(C_OK,'installed')+'<span>Docker is installed.</span>'}
@@ -1168,6 +1228,11 @@ function fetchStatus(){fetch('/api/status',{headers:hdrs()}).then(function(r){re
     a.title='Subscription login is valid. The short-lived access token renews automatically (~'+t.toLocaleTimeString()+'); you only need to run claude login again if this shows expired.'}
 }).catch(function(){})}
 setInterval(tickClock,1000);fetchStatus();setInterval(fetchStatus,30000);
+// Agent messages (agent->agent / agent->user): poll and mirror into the active chat (default on).
+var agentSince=Date.now();
+function mirrorOn(){return localStorage.zx_mirror!=='0'}
+function pollAgentMsgs(){fetch('/api/agentmsgs?since='+agentSince,{headers:hdrs()}).then(function(r){return r.ok?r.json():[]}).then(function(ms){if(!ms||!ms.length)return;ms.forEach(function(m){if(m.ts>agentSince)agentSince=m.ts;if(mirrorOn()){switchView('chat');add('bot','\\uD83E\\uDD16 '+m.from+' \\u2192 '+m.to,m.text)}})}).catch(function(){})}
+setInterval(pollAgentMsgs,4000);
 function loadMemory(){fetch('/api/settings',{headers:hdrs()}).then(function(r){if(r.status===401)return null;return r.json()}).then(function(s){
     if(!s||!s.identity){el('memview').textContent='(memory unavailable)';return}
     var id=s.identity,mu=id.memoryUsage,h='';
