@@ -12,6 +12,7 @@ import type { UsageTracker } from '../core/usage.js';
 import { runWebSearch, localSearchAvailable, runHaService, haConfigured } from '../core/localTools.js';
 import { setTempName } from '../core/displayName.js';
 import { buildPaidTools } from './paid.js';
+import { readInbox, emailConfigured } from './email.js';
 import type { AgentStore } from '../core/agents.js';
 
 /** Live conversation context, captured per agent turn so tools deliver to the right place. */
@@ -422,11 +423,34 @@ export function buildToolServers(ctx: ToolContext, deps: ToolDeps): Record<strin
     },
   );
 
+  const readEmail = tool(
+    'read_email',
+    'Read the user\'s email inbox. READ-ONLY: it never sends, replies, deletes, or even marks messages as read. Returns recent/unread messages with sender, subject, and date. Use for requests like "summarize my unread emails", "any important mail today?", "what\'s in my inbox". Requires EMAIL_USER / EMAIL_PASSWORD / EMAIL_IMAP_HOST in .env.',
+    {
+      unreadOnly: z.boolean().optional().describe('Only unread messages (default true); false = recent messages'),
+      limit: z.number().optional().describe('Max messages to return (default 15, max 50)'),
+      search: z.string().optional().describe('Only messages whose sender or subject contains this text'),
+    },
+    async (args) => {
+      if (!emailConfigured()) {
+        return text('Email is not set up. Add EMAIL_USER, EMAIL_PASSWORD, and EMAIL_IMAP_HOST (e.g. imap.gmail.com) to .env — use an app password — then restart. (Do NOT enable ZAMOLXIS_CHANNEL_EMAIL; that one auto-replies. This tool is read-only.)');
+      }
+      try {
+        const items = await readInbox({ unreadOnly: args.unreadOnly, limit: args.limit, search: args.search });
+        if (!items.length) return text(args.unreadOnly === false ? 'No messages found in the inbox.' : 'No unread messages.');
+        return text(items.map((m, i) => `${i + 1}. From: ${m.from}\n   Subject: ${m.subject}\n   Date: ${m.date}`).join('\n\n'));
+      } catch (e) {
+        return text('Could not read the inbox: ' + String(e));
+      }
+    },
+  );
+
   return {
     zamolxis: createSdkMcpServer({
       name: 'zamolxis',
       version: '0.1.0',
       tools: [
+        readEmail,
         createAgent,
         listAgents,
         runAgentTool,
