@@ -12,7 +12,7 @@ import type { UsageTracker } from '../core/usage.js';
 import { runWebSearch, localSearchAvailable, runHaService, haConfigured } from '../core/localTools.js';
 import { setTempName } from '../core/displayName.js';
 import { buildPaidTools } from './paid.js';
-import { readInbox, resolveAccount, listAccountNames } from './email.js';
+import { readInbox, resolveAccount, listAccountNames, addAccount } from './email.js';
 import type { AgentStore } from '../core/agents.js';
 
 /** Live conversation context, captured per agent turn so tools deliver to the right place. */
@@ -449,6 +449,23 @@ export function buildToolServers(ctx: ToolContext, deps: ToolDeps): Record<strin
       }
     },
   );
+  const addEmailAccount = tool(
+    'add_email_account',
+    'Save an email account so read_email can use it. The user can give just their email + app password (and optionally a provider); IMAP server settings are auto-filled for gmail/outlook/hotmail/yahoo/icloud/fastmail/zoho (or by email domain). Pass imapHost for anything else. Use when the user says e.g. "connect my gmail me@gmail.com, app password XXXX" or supplies email+password while creating an agent. Stored locally; the password is never echoed.',
+    {
+      user: z.string().describe('The full email address'),
+      password: z.string().describe('App password (or mailbox password). Stored locally only.'),
+      name: z.string().optional().describe('Short account name to reference later (default: the part before @)'),
+      provider: z.string().optional().describe('gmail | outlook | hotmail | live | yahoo | icloud | fastmail | zoho (optional; auto-detected from the address)'),
+      imapHost: z.string().optional().describe('IMAP host for providers without a preset'),
+      imapPort: z.number().optional().describe('IMAP port (default 993)'),
+    },
+    async (args) => {
+      const r = addAccount(deps.dataDir, args);
+      if (!r.ok) return text('Could not add the account: ' + (r.error || 'unknown error'));
+      return text(`Saved email account "${r.name}" (IMAP ${r.imapHost}). Use it with read_email account="${r.name}". It's read-only — Zamolxis never sends from it.`);
+    },
+  );
   const listEmailAccounts = tool(
     'list_email_accounts',
     'List the configured email account names that read_email can use (no passwords). Use to discover which mailboxes are available.',
@@ -465,6 +482,7 @@ export function buildToolServers(ctx: ToolContext, deps: ToolDeps): Record<strin
       version: '0.1.0',
       tools: [
         readEmail,
+        addEmailAccount,
         listEmailAccounts,
         createAgent,
         listAgents,

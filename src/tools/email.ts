@@ -34,6 +34,63 @@ interface Conn {
   pass: string;
 }
 
+/** IMAP presets so the user only provides email + app password for the common providers. */
+const PRESETS: Record<string, { imapHost: string; imapPort: number }> = {
+  gmail: { imapHost: 'imap.gmail.com', imapPort: 993 },
+  googlemail: { imapHost: 'imap.gmail.com', imapPort: 993 },
+  outlook: { imapHost: 'outlook.office365.com', imapPort: 993 },
+  hotmail: { imapHost: 'outlook.office365.com', imapPort: 993 },
+  live: { imapHost: 'outlook.office365.com', imapPort: 993 },
+  office365: { imapHost: 'outlook.office365.com', imapPort: 993 },
+  yahoo: { imapHost: 'imap.mail.yahoo.com', imapPort: 993 },
+  icloud: { imapHost: 'imap.mail.me.com', imapPort: 993 },
+  fastmail: { imapHost: 'imap.fastmail.com', imapPort: 993 },
+  zoho: { imapHost: 'imap.zoho.com', imapPort: 993 },
+};
+
+/** Guess a provider from the email domain (so the user can skip even naming it). */
+function presetFromEmail(user: string): { imapHost: string; imapPort: number } | undefined {
+  const dom = (user.split('@')[1] || '').toLowerCase();
+  if (/gmail|googlemail/.test(dom)) return PRESETS.gmail;
+  if (/outlook|hotmail|live|msn/.test(dom)) return PRESETS.outlook;
+  if (/yahoo|ymail/.test(dom)) return PRESETS.yahoo;
+  if (/icloud|me\.com|mac\.com/.test(dom)) return PRESETS.icloud;
+  if (/fastmail/.test(dom)) return PRESETS.fastmail;
+  if (/zoho/.test(dom)) return PRESETS.zoho;
+  return undefined;
+}
+
+/** Add (or replace) an account in <dataDir>/emails.json. Resolves host/port from a provider
+ *  preset or the email domain when not given explicitly. Never logs/returns the password. */
+export function addAccount(
+  dataDir: string,
+  input: { name?: string; provider?: string; user: string; password: string; imapHost?: string; imapPort?: number },
+): { ok: boolean; name?: string; imapHost?: string; error?: string } {
+  if (!input.user || !input.password) return { ok: false, error: 'user (email) and password are required' };
+  let host = input.imapHost;
+  let port = input.imapPort;
+  if (!host && input.provider && PRESETS[input.provider.toLowerCase()]) {
+    host = PRESETS[input.provider.toLowerCase()]!.imapHost;
+    port = port ?? PRESETS[input.provider.toLowerCase()]!.imapPort;
+  }
+  if (!host) {
+    const g = presetFromEmail(input.user);
+    if (g) { host = g.imapHost; port = port ?? g.imapPort; }
+  }
+  if (!host) return { ok: false, error: 'Could not determine the IMAP server. Pass provider (gmail/outlook/yahoo/...) or imapHost.' };
+  const name = (input.name || input.user.split('@')[0] || 'account').toLowerCase().replace(/[^a-z0-9._-]+/g, '-');
+  const acct: EmailAccount = { name, imapHost: host, imapPort: port ?? 993, user: input.user, password: input.password };
+  const file = path.join(dataDir, 'emails.json');
+  const list = loadAccounts(dataDir).filter((a) => a.name !== name);
+  list.push(acct);
+  try {
+    fs.writeFileSync(file, JSON.stringify(list, null, 2));
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+  return { ok: true, name, imapHost: host };
+}
+
 export function loadAccounts(dataDir: string): EmailAccount[] {
   try {
     const raw = JSON.parse(fs.readFileSync(path.join(dataDir, 'emails.json'), 'utf8'));
