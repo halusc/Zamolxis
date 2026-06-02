@@ -737,7 +737,13 @@ button:hover{border-color:var(--accent);color:var(--accent)}
 .tab:hover{color:var(--ink)}
 .tab.active{color:#1a150d;background:linear-gradient(135deg,var(--accent),#dcb964);border-color:var(--accent);font-weight:600}
 #main{flex:1;display:flex;overflow:hidden}
-#provrail{width:158px;flex:none;border-right:1px solid var(--line);overflow:auto;padding:10px 8px;background:#120f0a}
+#provrail{width:158px;flex:none;border-right:1px solid var(--line);background:#120f0a;display:flex;flex-direction:column;position:relative}
+#provsec{overflow:auto;padding:10px 8px;flex:none;height:50%}
+#railsplit{height:7px;flex:none;cursor:row-resize;background:var(--line);opacity:.45}
+#railsplit:hover{opacity:1;background:var(--accent)}
+#agentsec{overflow:auto;padding:8px 8px 10px;flex:1 1 0;min-height:42px}
+#railwidth{position:absolute;top:0;right:-3px;width:7px;height:100%;cursor:col-resize;z-index:6}
+#railwidth:hover{background:var(--accent);opacity:.5}
 #maininner{flex:1;display:flex;overflow:hidden}
 #chatwrap{flex:1;position:relative;overflow:hidden}
 @media(max-width:680px){#provrail{display:none}}
@@ -818,7 +824,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 <div id="modelsbar"><span id="models"></span></div>
 <div id="tabbar"></div>
 <div id="main">
-  <aside id="provrail"></aside>
+  <aside id="provrail"><div id="provsec"><div id="provchain"></div></div><div id="railsplit" title="Drag to resize Providers / Agents"></div><div id="agentsec"><div style="text-transform:uppercase;font-size:10px;letter-spacing:.5px;color:var(--mut);margin:2px 4px 6px">Agents</div><div id="agentrail"></div><div id="newagent" style="color:var(--accent);font-size:11px;margin:6px 4px;cursor:pointer">+ new agent</div></div><div id="railwidth" title="Drag to resize the panel width"></div></aside>
   <div id="maininner">
   <div id="threadpanel"><div id="threadbody"><div style="display:flex;align-items:center;justify-content:space-between;margin-top:0"><h3 style="margin:0">Chats</h3><button id="threadclose" title="Close" style="background:none;border:none;color:var(--mut);font-size:20px;line-height:1;cursor:pointer;padding:0 4px">&times;</button></div><button id="newchat" style="width:100%;margin:10px 0">+ New chat</button><div id="threadlist"></div></div></div>
   <div id="chatwrap">
@@ -854,7 +860,7 @@ function railItem(d,tok){var label=tok,color=C_OFF,title=tok;
   else{var pp=(d.providers||[]).filter(function(p){return p.id===tok})[0];if(pp){label=pp.label;var lim=pp.freeDaily&&pp.used>=pp.freeDaily;color=!pp.configured?C_OFF:(lim?C_BAD:C_OK);title=pp.kind}}
   var used=tokMatch(tok,d);
   return '<div title="'+esc(title)+'" style="display:flex;align-items:center;gap:7px;padding:6px 7px;border-radius:7px;margin-bottom:4px;'+(used?'background:rgba(212,165,90,.14);border:1px solid var(--accent)':'border:1px solid transparent')+'">'+dotHtml(color,title)+'<span style="flex:1;color:'+color+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(label)+'</span>'+(used?'<span style="color:var(--accent);font-size:10px">last</span>':'')+'</div>'}
-function renderRail(){var box=el('provrail');if(!box)return;var d=RAIL;if(!d){box.innerHTML='';return}
+function renderRail(){var box=el('provchain');if(!box)return;var d=RAIL;if(!d){box.innerHTML='';return}
   var chain=d.routeChain||[];
   var h='<div style="color:var(--mut);text-transform:uppercase;font-size:10px;letter-spacing:.5px;margin:2px 4px 8px">Active chain</div>';
   if(!chain.length)h+='<div style="color:var(--mut);padding:4px 7px">none</div>';
@@ -866,8 +872,7 @@ function renderRail(){var box=el('provrail');if(!box)return;var d=RAIL;if(!d){bo
     } else h+=railItem(d,tok);
   });
   h+='<div id="raillink" style="color:var(--mut);font-size:10px;margin:9px 4px 4px;cursor:pointer">edit in Providers &#8594;</div>';
-  h+='<div style="text-transform:uppercase;font-size:10px;letter-spacing:.5px;color:var(--mut);margin:14px 4px 6px;border-top:1px solid var(--line);padding-top:10px">Agents</div><div id="agentrail"></div><div id="newagent" style="color:var(--accent);font-size:11px;margin:6px 4px;cursor:pointer">+ new agent</div>';
-  box.innerHTML=h;var lk=el('raillink');if(lk)lk.onclick=function(){el('provbtn').click()};var na=el('newagent');if(na)na.onclick=createAgentPrompt;loadAgents()}
+  box.innerHTML=h;var lk=el('raillink');if(lk)lk.onclick=function(){el('provbtn').click()};loadAgents()}
 function loadRail(){fetch('/api/providers',{headers:hdrs()}).then(function(r){return r.ok?r.json():null}).then(function(d){if(d){RAIL=d;renderRail();rebuildRouteSelect();if(LASTD)renderModels(LASTD)}}).catch(function(){})}
 var AGENTS=[],SCHEDS=[];
 function loadAgents(){fetch('/api/agents',{headers:hdrs()}).then(function(r){return r.ok?r.json():[]}).then(function(a){AGENTS=a||[];renderAgents();loadSchedules()}).catch(function(){})}
@@ -1062,6 +1067,18 @@ el('toolsbtn').onclick=function(e){e.stopPropagation();el('toolsdrop').classList
 document.addEventListener('click',function(){closeTools()});
 el('chats').onclick=function(){var open=el('threadpanel').classList.contains('open');closePanels();closeTools();if(!open){renderThreads();el('threadpanel').classList.add('open')}};
 el('threadclose').onclick=function(){el('threadpanel').classList.remove('open')};
+if(el('newagent'))el('newagent').onclick=createAgentPrompt;
+(function setupRailResize(){var rail=el('provrail'),sec=el('provsec'),split=el('railsplit'),wh=el('railwidth');if(!rail||!sec||!split||!wh)return;
+  try{if(localStorage.zx_railsplit)sec.style.height=localStorage.zx_railsplit}catch(e){}
+  try{if(localStorage.zx_railw)rail.style.width=localStorage.zx_railw}catch(e){}
+  var dragY=false,dragX=false;
+  split.addEventListener('mousedown',function(e){dragY=true;e.preventDefault();document.body.style.userSelect='none'});
+  wh.addEventListener('mousedown',function(e){dragX=true;e.preventDefault();document.body.style.userSelect='none'});
+  document.addEventListener('mousemove',function(e){
+    if(dragY){var top=rail.getBoundingClientRect().top;var h=Math.max(42,Math.min(rail.clientHeight-70,e.clientY-top));sec.style.height=h+'px'}
+    if(dragX){var left=rail.getBoundingClientRect().left;var w=Math.max(120,Math.min(440,e.clientX-left));rail.style.width=w+'px'}});
+  document.addEventListener('mouseup',function(){if(dragY){try{localStorage.zx_railsplit=sec.style.height}catch(e){}}if(dragX){try{localStorage.zx_railw=rail.style.width}catch(e){}}if(dragY||dragX)document.body.style.userSelect='';dragY=false;dragX=false});
+})();
 el('newchat').onclick=newChat;
 el('cog').onclick=function(){closePanels();closeTools();el('panel').classList.add('open');loadSettings()};
 el('close').onclick=function(){el('panel').classList.remove('open')};
