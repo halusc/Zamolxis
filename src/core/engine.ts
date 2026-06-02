@@ -130,14 +130,32 @@ function editDistance(a: string, b: string): number {
  *  "ESCOLATE"). We treat any ALL-CAPS standalone token that is ESCALATE or a near miss (ESC-
  *  prefix, edit distance <= 2) as a hand-off — case-SENSITIVE caps, so ordinary lowercase prose
  *  that merely mentions escalating stays a normal answer. An empty reply also escalates. */
+/** Map Cyrillic (and a few Greek) look-alike letters to their Latin equivalents. Small models
+ *  sometimes emit homoglyphs ("ESCOLЕТАTE" with Cyrillic ЕТА), which
+ *  otherwise break letter-based matching. */
+const HOMOGLYPHS: Record<string, string> = {
+  'А': 'A', 'В': 'B', 'Е': 'E', 'К': 'K', 'М': 'M', 'Н': 'H', 'О': 'O', 'Р': 'P', 'С': 'C', 'Т': 'T', 'Х': 'X', 'І': 'I', 'Ј': 'J', 'Ѕ': 'S',
+  'а': 'a', 'в': 'b', 'е': 'e', 'к': 'k', 'м': 'm', 'н': 'h', 'о': 'o', 'р': 'p', 'с': 'c', 'т': 't', 'х': 'x', 'у': 'y', 'і': 'i', 'ѕ': 's',
+  'Α': 'A', 'Β': 'B', 'Ε': 'E', 'Η': 'H', 'Ι': 'I', 'Κ': 'K', 'Μ': 'M', 'Ν': 'N', 'Ο': 'O', 'Ρ': 'P', 'Τ': 'T', 'Χ': 'X',
+};
+function normalizeHomoglyphs(s: string): string {
+  return (s ?? '').replace(/[Α-ϿЀ-ӿ]/g, (ch) => HOMOGLYPHS[ch] ?? ch);
+}
+
 function wantsEscalate(text: string): boolean {
-  const t = (text ?? '').trim();
-  if (!t) return true;
+  const raw = (text ?? '').trim();
+  if (!raw) return true;
+  const t = normalizeHomoglyphs(raw);
+  // An ALL-CAPS ESC*-prefixed token that either ends in "ATE" (the strong ESCALATE signature —
+  // catches ESCALATE / ESCOLETATE / ESCOALATE) or is a tight near-miss (dist<=2). Ending-in-ATE
+  // excludes real words like "ESCAPE" (ends "APE", dist 3) so they don't false-trigger.
+  const isEscToken = (w: string): boolean =>
+    w.length >= 6 && w.length <= 16 && w === w.toUpperCase() && w.startsWith('ESC') && (w.endsWith('ATE') || editDistance(w, 'ESCALATE') <= 2);
   for (const w of t.split(/[^A-Za-z]+/)) {
-    if (w.length >= 5 && w.length <= 12 && w === w.toUpperCase() && w.startsWith('ESC')) {
-      if (w === 'ESCALATE' || editDistance(w, 'ESCALATE') <= 2) return true;
-    }
+    if (w === 'ESCALATE' || isEscToken(w)) return true;
   }
+  // Whole reply (letters only) is one such token — the model tried to say ESCALATE but mangled it.
+  if (isEscToken(t.replace(/[^A-Za-z]+/g, ''))) return true;
   // Whole reply is basically just "escalate" (any case), possibly wrapped in punctuation/markdown/quotes.
   if (/^[\s>*_`"'[(<:.\-]*escalate[\s>*_`"'\])>:.!\-]*$/i.test(t)) return true;
   return false;
@@ -290,9 +308,13 @@ export class Engine {
 
   /** A short user message that rejects the previous answer and asks to escalate. */
   private isEscalationTrigger(text: string): boolean {
-    const t = (text ?? '').trim().toLowerCase();
+    const t = normalizeHomoglyphs((text ?? '').trim()).toLowerCase();
     if (!t || t.length > 40) return false;
-    return /^(escalate( this| it)?|wrong|that'?s wrong|that is wrong|incorrect|that'?s incorrect|not right|that'?s not right|no,? ?(that'?s )?(wrong|incorrect)|nope,? ?wrong|redo|try again|do it again|use claude|ask claude|bigger model)[.!]*$/i.test(t);
+    if (/^(escalate( this| it)?|wrong|that'?s wrong|that is wrong|incorrect|that'?s incorrect|not right|that'?s not right|no,? ?(that'?s )?(wrong|incorrect)|nope,? ?wrong|redo|try again|do it again|use claude|ask claude|bigger model)[.!]*$/i.test(t)) return true;
+    // Single-word near-miss of "escalate" (typos/variants like "escalade", "escalte", "excalate").
+    const w = t.replace(/[^a-z]+/g, '');
+    if (w.length >= 6 && w.length <= 12 && editDistance(w, 'escalate') <= 2) return true;
+    return false;
   }
 
   /** Run a named user-defined agent against a task, on its configured tier with only its tools.
