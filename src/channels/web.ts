@@ -15,6 +15,7 @@ import type { SkillsManager } from '../skills/manager.js';
 import type { MemoryManager } from '../core/memory.js';
 import type { AgentStore } from '../core/agents.js';
 import { packSetup, type PackParts } from '../core/pack.js';
+import { autostartStatus, setAutostart } from '../core/autostart.js';
 import { oauthExpiry } from '../core/auth.js';
 import { effectiveName, tempName } from '../core/displayName.js';
 import { providerStatus } from '../core/providers.js';
@@ -162,7 +163,14 @@ export class WebChannel implements Channel {
       skills?: string[];
       codeTools?: { name: string }[];
       risk?: { level: string; note: string; recommendedModel?: string };
+      schedule?: { cron: string; task?: string; humanReadable?: string };
     }>,
+    /** Convert a plain-language schedule to a cron expression via the smart model. */
+    private readonly nlToCron?: (text: string) => Promise<{ cron?: string; note: string }>,
+    /** Stop (suspend all schedules + halt) or resume an agent. */
+    private readonly stopAgent?: (name: string, stop: boolean) => Promise<{ ok: boolean; suspended: number; stopped: boolean }>,
+    /** Analyze an agent: smart model reviews recent outputs and improves its spec. */
+    private readonly analyzeAgent?: (name: string) => Promise<{ ok: boolean; assessment?: string; changed?: boolean; note?: string }>,
   ) {
     const { bind, authToken } = config.web;
     if (!LOOPBACK.includes(bind) && !authToken) {
@@ -509,11 +517,30 @@ export class WebChannel implements Channel {
             }
             if (action === 'schedule') {
               if (!this.scheduleAgent) return this.json(res, 400, { error: 'scheduling unavailable' });
-              const cron = String(o.cron || '').trim();
-              if (!cron) return this.json(res, 400, { error: 'cron required' });
-              if (!this.agentStore.get(String(o.name || ''))) return this.json(res, 400, { error: 'no such agent' });
-              const j = this.scheduleAgent(String(o.name || ''), cron, o.task ? String(o.task) : undefined);
-              return this.json(res, 200, { ok: true, id: j.id, schedules: this.listAgentSchedules ? this.listAgentSchedules() : [] });
+              const name = String(o.name || '');
+              if (!this.agentStore.get(name)) return this.json(res, 400, { error: 'no such agent' });
+              let cron = String(o.cron || '').trim();
+              let note = '';
+              // Plain-language schedule ("every 5 minutes", "weekdays at 9am") -> cron via the smart model.
+              if (!cron && o.when && this.nlToCron) {
+                const r = await this.nlToCron(String(o.when));
+                if (!r.cron) return this.json(res, 400, { error: 'Could not read that schedule. Try e.g. "every 5 minutes" or "weekdays at 9am".' });
+                cron = r.cron;
+                note = r.note;
+              }
+              if (!cron) return this.json(res, 400, { error: 'cron or when required' });
+              const j = this.scheduleAgent(name, cron, o.task ? String(o.task) : undefined);
+              return this.json(res, 200, { ok: true, id: j.id, cron, note, schedules: this.listAgentSchedules ? this.listAgentSchedules() : [] });
+            }
+            if (action === 'stop') {
+              if (!this.stopAgent) return this.json(res, 400, { error: 'stop unavailable' });
+              const r = await this.stopAgent(String(o.name || ''), o.stop !== false);
+              return this.json(res, 200, { ok: r.ok, stopped: r.stopped, suspended: r.suspended, agents: this.agentStore.list(), schedules: this.listAgentSchedules ? this.listAgentSchedules() : [] });
+            }
+            if (action === 'analyze') {
+              if (!this.analyzeAgent) return this.json(res, 400, { error: 'analyze unavailable' });
+              const r = await this.analyzeAgent(String(o.name || ''));
+              return this.json(res, 200, { ok: r.ok, assessment: r.assessment, changed: r.changed, note: r.note, agents: this.agentStore.list() });
             }
             if (action === 'schedules') {
               return this.json(res, 200, { ok: true, schedules: this.listAgentSchedules ? this.listAgentSchedules() : [] });
@@ -523,6 +550,23 @@ export class WebChannel implements Channel {
               return this.json(res, 200, { ok, schedules: this.listAgentSchedules ? this.listAgentSchedules() : [] });
             }
             return this.json(res, 400, { error: 'unknown action' });
+          } catch (err) {
+            this.json(res, 400, { error: String(err) });
+          }
+        });
+        return;
+      }
+    }
+    if (url.pathname === '/api/autostart') {
+      if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
+      if (req.method === 'GET') return this.json(res, 200, autostartStatus());
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          try {
+            const o = JSON.parse(body || '{}');
+            this.json(res, 200, setAutostart(!!o.enabled));
           } catch (err) {
             this.json(res, 400, { error: String(err) });
           }
@@ -776,7 +820,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 <div id="main">
   <aside id="provrail"></aside>
   <div id="maininner">
-  <div id="threadpanel"><div id="threadbody"><h3 style="margin-top:0">Chats</h3><button id="newchat" style="width:100%;margin-bottom:10px">+ New chat</button><div id="threadlist"></div></div></div>
+  <div id="threadpanel"><div id="threadbody"><div style="display:flex;align-items:center;justify-content:space-between;margin-top:0"><h3 style="margin:0">Chats</h3><button id="threadclose" title="Close" style="background:none;border:none;color:var(--mut);font-size:20px;line-height:1;cursor:pointer;padding:0 4px">&times;</button></div><button id="newchat" style="width:100%;margin:10px 0">+ New chat</button><div id="threadlist"></div></div></div>
   <div id="chatwrap">
   <div id="chatview">
     <div id="log"><div id="loginner"></div></div>
@@ -833,25 +877,30 @@ function renderAgents(){var box=el('agentrail');if(!box)return;
   if(!AGENTS.length){box.innerHTML='<div style="color:var(--mut);font-size:11px;padding:2px 7px">none yet</div>';return}
   box.innerHTML=AGENTS.map(function(a){
     var sl=schedsFor(a.name).map(function(s){return '<div style="font-size:10px;color:var(--mut);margin-left:8px;margin-top:1px">\\u23F0 '+esc(s.cron||s.at||'')+' <span class="ascd" data-id="'+esc(s.id)+'" title="cancel" style="color:#e88;cursor:pointer">\\u00d7</span></div>'}).join('');
-    return '<div style="padding:4px 7px"><div style="font-size:12px" title="'+esc(a.job)+'">'+esc(a.label||a.name)+' <span style="color:var(--mut);font-size:10px">['+esc(a.model)+(a.canElevate?'\\u2191':'')+']</span>'+((a.risk&&a.risk.level&&a.risk.level!=='low')?(' <span title="'+esc(a.risk.note||'')+'" style="color:'+(a.risk.level==='high'?'#e06a5f':'#e0a55f')+';font-size:10px">\\u26A0 '+esc(a.risk.level)+'</span>'):'')+'</div><div style="margin-top:1px"><span class="arun" data-n="'+esc(a.name)+'" style="color:var(--accent);cursor:pointer;font-size:11px">run</span><span class="asch" data-n="'+esc(a.name)+'" style="color:var(--accent);cursor:pointer;font-size:11px;margin-left:10px">schedule</span><span class="adel" data-n="'+esc(a.name)+'" style="color:#e88;cursor:pointer;font-size:11px;margin-left:10px">delete</span></div>'+sl+'</div>'}).join('');
+    return '<div style="padding:4px 7px"><div style="font-size:12px" title="'+esc(a.job)+'"><span class="aopen" data-n="'+esc(a.name)+'" style="cursor:pointer;text-decoration:underline" title="open '+esc(a.name)+' chat">'+esc(a.label||a.name)+'</span> <span style="color:var(--mut);font-size:10px">['+esc(a.model)+(a.canElevate?'\\u2191':'')+']</span>'+((a.risk&&a.risk.level&&a.risk.level!=='low')?(' <span title="'+esc(a.risk.note||'')+'" style="color:'+(a.risk.level==='high'?'#e06a5f':'#e0a55f')+';font-size:10px">\\u26A0 '+esc(a.risk.level)+'</span>'):'')+((a.stopped)?' <span style="color:var(--mut);font-size:10px">[stopped]</span>':'')+'</div><div style="margin-top:1px"><span class="arun" data-n="'+esc(a.name)+'" style="color:var(--accent);cursor:pointer;font-size:11px">run</span><span class="aana" data-n="'+esc(a.name)+'" style="color:var(--accent);cursor:pointer;font-size:11px;margin-left:10px">analyze</span><span class="asch" data-n="'+esc(a.name)+'" style="color:var(--accent);cursor:pointer;font-size:11px;margin-left:10px">schedule</span><span class="astp" data-n="'+esc(a.name)+'" data-stop="'+(a.stopped?'0':'1')+'" style="color:'+(a.stopped?'#7dd08a':'#e0a55f')+';cursor:pointer;font-size:11px;margin-left:10px">'+(a.stopped?'resume':'stop')+'</span><span class="adel" data-n="'+esc(a.name)+'" style="color:#e88;cursor:pointer;font-size:11px;margin-left:10px">delete</span></div>'+sl+'</div>'}).join('');
   [].slice.call(box.querySelectorAll('.arun')).forEach(function(x){x.onclick=function(){runAgentUI(x.getAttribute('data-n'))}});
+  [].slice.call(box.querySelectorAll('.aopen')).forEach(function(x){x.onclick=function(){openAgentChat(x.getAttribute('data-n'))}});
+  [].slice.call(box.querySelectorAll('.aana')).forEach(function(x){x.onclick=function(){analyzeAgentUI(x.getAttribute('data-n'))}});
   [].slice.call(box.querySelectorAll('.asch')).forEach(function(x){x.onclick=function(){scheduleAgentUI(x.getAttribute('data-n'))}});
+  [].slice.call(box.querySelectorAll('.astp')).forEach(function(x){x.onclick=function(){stopAgentUI(x.getAttribute('data-n'),x.getAttribute('data-stop')==='1')}});
   [].slice.call(box.querySelectorAll('.ascd')).forEach(function(x){x.onclick=function(){cancelSched(x.getAttribute('data-id'))}});
   [].slice.call(box.querySelectorAll('.adel')).forEach(function(x){x.onclick=function(){var n=x.getAttribute('data-n');if(!confirm('Delete agent "'+n+'"?'))return;fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'delete',name:n})}).then(function(){loadAgents()})}})}
-function scheduleAgentUI(name){var cron=prompt('Schedule "'+name+'" on a cron expression.\\n  */1 * * * *  = every minute\\n  */5 * * * *  = every 5 minutes\\n  0 * * * *    = hourly\\n  0 9 * * *    = 9:00 every day\\n  0 9 * * 1-5  = 9:00 on weekdays','*/5 * * * *');if(!cron)return;var task=prompt('Task to run each time (blank = the agent\\'s standard job):','');if(task===null)return;
-  fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'schedule',name:name,cron:cron,task:task||undefined})}).then(function(r){return r.json()}).then(function(d){if(d&&d.ok){if(d.schedules){SCHEDS=d.schedules;renderAgents()}showToast('Scheduled "'+name+'" ('+cron+').');setTimeout(hideToast,2000)}else{showToast((d&&d.error)?('Schedule failed: '+d.error):'Schedule failed.');setTimeout(hideToast,2500)}}).catch(function(){showToast('Schedule failed.')})}
+function scheduleAgentUI(name){var when=prompt('When should "'+name+'" run? Say it in plain language:\\n  "every 5 minutes"\\n  "every day at noon"\\n  "weekdays at 9am"\\n  "every hour"');if(!when)return;var task=prompt('What should it do each time? (blank = its standard job)','');if(task===null)return;
+  showToast('Working out the schedule...');
+  fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'schedule',name:name,when:when,task:task||undefined})}).then(function(r){return r.json()}).then(function(d){if(d&&d.ok){if(d.schedules){SCHEDS=d.schedules;renderAgents()}showToast('Scheduled: '+(d.note||d.cron));setTimeout(hideToast,2800)}else{showToast((d&&d.error)?d.error:'Schedule failed.');setTimeout(hideToast,3200)}}).catch(function(){showToast('Schedule failed.')})}
+function stopAgentUI(name,stop){fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'stop',name:name,stop:stop})}).then(function(r){return r.json()}).then(function(d){if(d){if(d.schedules)SCHEDS=d.schedules;loadAgents();showToast(stop?('Stopped "'+name+'" ('+(d.suspended||0)+' schedule(s) suspended)'):('Resumed "'+name+'"'));setTimeout(hideToast,2500)}}).catch(function(){showToast('Action failed.')})}
+function analyzeAgentUI(name){showToast('Analyzing "'+name+'" with the smart model...');fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'analyze',name:name})}).then(function(r){return r.json()}).then(function(d){loadAgents();hideToast();if(d&&d.ok){alert('Analysis of "'+name+'":\\n\\n'+(d.assessment||'(no assessment)')+'\\n\\n'+(d.changed?'\\u2713 The prompt was improved.':'No change needed.'))}else{showToast((d&&d.note)?d.note:'Analyze failed.');setTimeout(hideToast,3000)}}).catch(function(){showToast('Analyze failed.')})}
 function cancelSched(id){if(!confirm('Cancel this schedule?'))return;fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'unschedule',id:id})}).then(function(r){return r.ok?r.json():null}).then(function(d){if(d&&d.schedules){SCHEDS=d.schedules;renderAgents()}}).catch(function(){})}
 function runAgentUI(name){var task=prompt('Task for "'+name+'" (blank = its standard job):','');if(task===null)return;switchView('chat');var m=add('bot',name,'(running '+name+'...)');setStatus('agent '+name+' running...');
   fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'run',name:name,task:task||undefined})}).then(function(r){return r.ok?r.json():null}).then(function(d){setStatus('');if(m)m.textContent=(d&&d.reply)?d.reply:'(no reply)'}).catch(function(){setStatus('');if(m)m.textContent='(agent run failed)'})}
-function createAgentPrompt(){var name=prompt('New agent name:');if(!name)return;var job=prompt('Its job / instructions (plain language - the smart model compiles it into an executable plan):');if(!job)return;
-  var model=prompt('Model/tier: auto (let the planner choose by risk) | local | freecloud | groq | google | cerebras | mistral | openrouter | deepseek | claude','auto')||'auto';
-  var tools=prompt('Tools it may use (comma-separated; blank = default + auto-chosen), e.g. web_search,read_url,http_get','');
-  var toolArr=tools?tools.split(',').map(function(s){return s.trim()}).filter(Boolean):undefined;
-  showToast('Compiling the agent plan with the smart model...');postCreateAgent(name,job,model,toolArr)}
+function createAgentPrompt(){var name=prompt('New agent name:');if(!name)return;
+  var job=prompt('Tell the story in plain language: what the agent should do, and how often if it should repeat.\\n\\ne.g. "Every morning at 8 fetch the top Hacker News stories and send me a 5-bullet summary."\\n\\nThe smart model writes clear instructions + skills for a cheaper model to run, and sets up the schedule if you mentioned one.');if(!job)return;
+  showToast('The smart model is writing the plan (instructions, skills, schedule)...');postCreateAgent(name,job,'auto',undefined)}
 function postCreateAgent(name,job,model,toolArr){
   fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'create',name:name,job:job,model:model,tools:toolArr,canElevate:true})}).then(function(r){return r.json()}).then(function(d){
     loadAgents();var p=d&&d.plan;
     if(p&&p.ok){var parts=['executor: '+(p.executor||'?')];
+      if(p.schedule&&p.schedule.cron)parts.push('schedule: '+(p.schedule.humanReadable||p.schedule.cron));
       if(p.skills&&p.skills.length)parts.push('skills: '+p.skills.join(', '));
       if(p.codeTools&&p.codeTools.length)parts.push('built tools: '+p.codeTools.map(function(t){return t.name}).join(', '));
       showToast('Compiled \\u2713  '+parts.join('  |  '));setTimeout(hideToast,3500);
@@ -889,9 +938,12 @@ function doUninstall(){var purge=!!(el('un_purge')&&el('un_purge').checked);
   awaitingReload=true;showToast('Uninstalling '+AGENT_NAME+'... the server will stop shortly.');
   fetch('/api/uninstall',{method:'POST',headers:hdrs(),body:JSON.stringify({purge:purge})}).catch(function(){});}
 var threads=[];try{threads=JSON.parse(localStorage.zx_threads||'[]')}catch(e){}
-if(!threads.length){threads=[{id:(localStorage.zx_cid||uuid()),label:'Chat 1'}]}
-var cid=localStorage.zx_thread||threads[0].id;
-if(!threads.some(function(t){return t.id===cid})){cid=threads[0].id}
+// The Main chat is permanent + undeletable, always first, and is bridged two-way to every
+// configured messaging channel (Telegram, etc.).
+threads=threads.filter(function(t){return t.id!=='main'});
+threads.unshift({id:'main',label:'Main',main:true});
+var cid=localStorage.zx_thread||'main';
+if(!threads.some(function(t){return t.id===cid})){cid='main'}
 var token=localStorage.zx_token||'';
 var AGENT_NAME='__AGENT_NAME__',BOT_LABEL=AGENT_NAME.toLowerCase();
 var ws=null,gen=0,cur=null,curStarted=false,awaitingReload=false,buildStarted=0;
@@ -946,19 +998,29 @@ function applyModel(){var n=el('model');if(n)n.value=curModel()}
 // for local/provider routes) hide it — otherwise a stale selection gets sent and forces Claude.
 function updateModelVis(){var re=el('route'),me=el('model');if(!me)return;me.style.display=(re&&re.value==='claude')?'':'none'}
 function saveThreads(){localStorage.zx_threads=JSON.stringify(threads);localStorage.zx_thread=cid}
-function loadThread(id){cid=id;saveThreads();applyRoute();applyModel();el('loginner').innerHTML='';cur=null;curStarted=false;var old=ws;openWs();if(old){try{old.close()}catch(e){}}renderThreads()}
-function renderThreads(){var h='';threads.forEach(function(t){h+='<div class="thread'+(t.id===cid?' cur':'')+'" data-id="'+t.id+'"><span class="lbl">'+esc(t.label)+'</span><span class="del" data-del="'+t.id+'">delete</span></div>'});el('threadlist').innerHTML=h;
+function isAgentCid(id){return !!id&&id.indexOf('agent:')===0}
+function agentNameOf(id){return id.slice(6)}
+function renderAgentThread(name){el('loginner').innerHTML='';AGENTLOG.forEach(function(m){if(m.from===name||m.to===name){var lbl=(m.from===name)?('\\uD83E\\uDD16 '+m.from+' \\u2192 '+m.to):(m.from+' \\u2192 '+name);add('bot',lbl,m.text)}})}
+function loadThread(id){cid=id;saveThreads();applyRoute();applyModel();el('loginner').innerHTML='';cur=null;curStarted=false;
+  if(isAgentCid(id)){var oa=ws;if(oa){try{oa.close()}catch(e){}}ws=null;renderAgentThread(agentNameOf(id));renderThreads();return}
+  var old=ws;openWs();if(old){try{old.close()}catch(e){}}renderThreads()}
+function renderThreads(){var h='';threads.forEach(function(t){var del=(t.id==='main'||t.agent)?'':'<span class="del" data-del="'+t.id+'">delete</span>';h+='<div class="thread'+(t.id===cid?' cur':'')+'" data-id="'+t.id+'"><span class="lbl">'+esc(t.label)+'</span>'+del+'</div>'});el('threadlist').innerHTML=h;
   Array.prototype.forEach.call(el('threadlist').querySelectorAll('.thread'),function(n){n.onclick=function(e){if(e.target.getAttribute('data-del'))return;loadThread(n.getAttribute('data-id'));el('threadpanel').classList.remove('open')}});
   Array.prototype.forEach.call(el('threadlist').querySelectorAll('[data-del]'),function(n){n.onclick=function(e){e.stopPropagation();deleteThread(n.getAttribute('data-del'))}})}
 function newChat(){var id=uuid();threads.unshift({id:id,label:'New chat'});loadThread(id);el('threadpanel').classList.remove('open');switchView('chat')}
-function deleteThread(id){fetch('/api/forget',{method:'POST',headers:hdrs(),body:JSON.stringify({cid:id})}).catch(function(){});
-  threads=threads.filter(function(t){return t.id!==id});if(!threads.length){threads=[{id:uuid(),label:'Chat 1'}]}if(id===cid){loadThread(threads[0].id)}else{saveThreads();renderThreads()}}
+function openAgentChat(name){var id='agent:'+name;if(!threads.some(function(t){return t.id===id})){threads.push({id:id,label:'\\uD83E\\uDD16 '+name,agent:name});saveThreads()}switchView('chat');loadThread(id);el('threadpanel').classList.remove('open')}
+function deleteThread(id){if(id==='main')return; /* the Main chat is permanent */
+  if(!isAgentCid(id))fetch('/api/forget',{method:'POST',headers:hdrs(),body:JSON.stringify({cid:id})}).catch(function(){});
+  threads=threads.filter(function(t){return t.id!==id});if(id===cid){loadThread('main')}else{saveThreads();renderThreads()}}
 var inHist=[];try{inHist=JSON.parse(localStorage.zx_inhist||'[]')}catch(e){}
 var histPos=-1,histDraft='';
 function pushHist(t){if(!t)return;if(inHist[inHist.length-1]!==t){inHist.push(t);if(inHist.length>100)inHist.shift();try{localStorage.zx_inhist=JSON.stringify(inHist)}catch(e){}}histPos=-1;histDraft=''}
 var pending=[];var MAXUP=20*1024*1024;
 function renameThreadFrom(t){if(!t)return;var th=threads.filter(function(x){return x.id===cid})[0];if(th&&(th.label==='New chat'||th.label==='Chat 1')){th.label=t.slice(0,32);saveThreads();renderThreads()}}
-function sendMsg(){var t=el('in').value.trim();var files=pending.slice();if(!t&&!files.length)return;if(!ws||ws.readyState!==1){setStatus('not connected');return}
+function sendMsg(){var t=el('in').value.trim();var files=pending.slice();if(!t&&!files.length)return;
+  if(isAgentCid(cid)){if(!t)return;switchView('chat');add('user','you',t);pushHist(t);el('in').value='';var nm=agentNameOf(cid);var mm=add('bot','\\uD83E\\uDD16 '+nm,'(running...)');setStatus('agent '+nm+' running...');
+    fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'run',name:nm,task:t})}).then(function(r){return r.ok?r.json():null}).then(function(d){setStatus('');if(mm)mm.textContent=(d&&d.reply)?d.reply:'(no reply)'}).catch(function(){setStatus('');if(mm)mm.textContent='(run failed)'});return}
+  if(!ws||ws.readyState!==1){setStatus('not connected');return}
   switchView('chat');
   var shown=t+(files.length?((t?'\\n':'')+files.map(function(f){return '📎 '+f.name}).join('\\n')):'');
   add('user','you',shown||'(file)');if(t)pushHist(t);el('in').value='';
@@ -999,6 +1061,7 @@ function closeTools(){var d=el('toolsdrop');if(d)d.classList.remove('open')}
 el('toolsbtn').onclick=function(e){e.stopPropagation();el('toolsdrop').classList.toggle('open')};
 document.addEventListener('click',function(){closeTools()});
 el('chats').onclick=function(){var open=el('threadpanel').classList.contains('open');closePanels();closeTools();if(!open){renderThreads();el('threadpanel').classList.add('open')}};
+el('threadclose').onclick=function(){el('threadpanel').classList.remove('open')};
 el('newchat').onclick=newChat;
 el('cog').onclick=function(){closePanels();closeTools();el('panel').classList.add('open');loadSettings()};
 el('close').onclick=function(){el('panel').classList.remove('open')};
@@ -1145,6 +1208,9 @@ function renderSettings(s){var L=s.live,m=s.meta,h='';
   h+=sec('Agents');
   h+='<label class="chk" style="font-size:13px;display:block"><input type="checkbox" id="mirroragents"> Mirror agent messages into the active chat (on by default)</label>';
   h+='<div style="font-size:11px;color:var(--mut);margin-top:2px">Create/run agents in the left rail (under Providers). Messages between agents and to you appear in the active chat when mirroring is on.</div>';
+  h+=sec('Startup');
+  h+='<label class="chk" style="font-size:13px;display:block"><input type="checkbox" id="autostart"> Start Zamolxis automatically when I log in</label>';
+  h+='<div id="autostatus" style="font-size:11px;color:var(--mut);margin-top:2px"></div>';
   h+=sec('Updates');
   h+='<button type="button" id="checkupd">Check for updates</button> <span id="updres" style="font-size:12px;color:var(--mut)">checks GitHub for a newer version.</span>';
   h+=sec('Engine (applies on next message)');
@@ -1205,6 +1271,8 @@ function renderSettings(s){var L=s.live,m=s.meta,h='';
   el('settings').innerHTML=h;el('ro').innerHTML='Data dir: '+m.dataDir+'<br>'+m.restartNote;fetchUsage();
   var pkb=el('packbtn');if(pkb)pkb.onclick=doPack;
   var ma=el('mirroragents');if(ma){ma.checked=(localStorage.zx_mirror!=='0');ma.onchange=function(){localStorage.zx_mirror=ma.checked?'1':'0'}}
+  var asb=el('autostart');if(asb){fetch('/api/autostart',{headers:hdrs()}).then(function(r){return r.ok?r.json():null}).then(function(st){if(!st)return;asb.checked=!!st.enabled;if(!st.supported)asb.disabled=true;var ad=el('autostatus');if(ad)ad.textContent=st.note||''}).catch(function(){});
+    asb.onchange=function(){var ad=el('autostatus');if(ad)ad.textContent='...';fetch('/api/autostart',{method:'POST',headers:hdrs(),body:JSON.stringify({enabled:asb.checked})}).then(function(r){return r.json()}).then(function(st){asb.checked=!!st.enabled;if(ad)ad.textContent=st.note||''}).catch(function(){if(ad)ad.textContent='Failed.'})}}
   var unb=el('uninstallbtn');if(unb)unb.onclick=doUninstall;
   var cub=el('checkupd');if(cub)cub.onclick=function(){var r=el('updres');cub.disabled=true;if(r)r.textContent='checking...';
     fetch('/api/checkupdate',{method:'POST',headers:hdrs()}).then(function(x){return x.ok?x.json():null}).then(function(u){cub.disabled=false;if(!r)return;
@@ -1298,9 +1366,14 @@ function fetchStatus(){fetch('/api/status',{headers:hdrs()}).then(function(r){re
 }).catch(function(){})}
 setInterval(tickClock,1000);fetchStatus();setInterval(fetchStatus,30000);
 // Agent messages (agent->agent / agent->user): poll and mirror into the active chat (default on).
-var agentSince=Date.now();
+var agentSince=Date.now();var AGENTLOG=[];
 function mirrorOn(){return localStorage.zx_mirror!=='0'}
-function pollAgentMsgs(){fetch('/api/agentmsgs?since='+agentSince,{headers:hdrs()}).then(function(r){return r.ok?r.json():[]}).then(function(ms){if(!ms||!ms.length)return;ms.forEach(function(m){if(m.ts>agentSince)agentSince=m.ts;if(mirrorOn()){switchView('chat');add('bot','\\uD83E\\uDD16 '+m.from+' \\u2192 '+m.to,m.text)}})}).catch(function(){})}
+function pollAgentMsgs(){fetch('/api/agentmsgs?since='+agentSince,{headers:hdrs()}).then(function(r){return r.ok?r.json():[]}).then(function(ms){if(!ms||!ms.length)return;ms.forEach(function(m){if(m.ts>agentSince)agentSince=m.ts;
+  AGENTLOG.push(m);if(AGENTLOG.length>500)AGENTLOG.shift();
+  var lbl='\\uD83E\\uDD16 '+m.from+' \\u2192 '+m.to;
+  if(isAgentCid(cid)&&(m.from===agentNameOf(cid)||m.to===agentNameOf(cid))){add('bot',lbl,m.text)} /* live into the open agent thread */
+  else if(mirrorOn()&&cid==='main'){add('bot',lbl,m.text)} /* and mirror into the main chat */
+})}).catch(function(){})}
 setInterval(pollAgentMsgs,4000);
 function loadMemory(){fetch('/api/settings',{headers:hdrs()}).then(function(r){if(r.status===401)return null;return r.json()}).then(function(s){
     if(!s||!s.identity){el('memview').textContent='(memory unavailable)';return}
