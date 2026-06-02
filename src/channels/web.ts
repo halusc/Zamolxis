@@ -15,6 +15,7 @@ import type { SkillsManager } from '../skills/manager.js';
 import type { MemoryManager } from '../core/memory.js';
 import type { AgentStore } from '../core/agents.js';
 import { packSetup, type PackParts } from '../core/pack.js';
+import { autostartStatus, setAutostart } from '../core/autostart.js';
 import { oauthExpiry } from '../core/auth.js';
 import { effectiveName, tempName } from '../core/displayName.js';
 import { providerStatus } from '../core/providers.js';
@@ -542,6 +543,23 @@ export class WebChannel implements Channel {
               return this.json(res, 200, { ok, schedules: this.listAgentSchedules ? this.listAgentSchedules() : [] });
             }
             return this.json(res, 400, { error: 'unknown action' });
+          } catch (err) {
+            this.json(res, 400, { error: String(err) });
+          }
+        });
+        return;
+      }
+    }
+    if (url.pathname === '/api/autostart') {
+      if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
+      if (req.method === 'GET') return this.json(res, 200, autostartStatus());
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          try {
+            const o = JSON.parse(body || '{}');
+            this.json(res, 200, setAutostart(!!o.enabled));
           } catch (err) {
             this.json(res, 400, { error: String(err) });
           }
@@ -1167,6 +1185,9 @@ function renderSettings(s){var L=s.live,m=s.meta,h='';
   h+=sec('Agents');
   h+='<label class="chk" style="font-size:13px;display:block"><input type="checkbox" id="mirroragents"> Mirror agent messages into the active chat (on by default)</label>';
   h+='<div style="font-size:11px;color:var(--mut);margin-top:2px">Create/run agents in the left rail (under Providers). Messages between agents and to you appear in the active chat when mirroring is on.</div>';
+  h+=sec('Startup');
+  h+='<label class="chk" style="font-size:13px;display:block"><input type="checkbox" id="autostart"> Start Zamolxis automatically when I log in</label>';
+  h+='<div id="autostatus" style="font-size:11px;color:var(--mut);margin-top:2px"></div>';
   h+=sec('Updates');
   h+='<button type="button" id="checkupd">Check for updates</button> <span id="updres" style="font-size:12px;color:var(--mut)">checks GitHub for a newer version.</span>';
   h+=sec('Engine (applies on next message)');
@@ -1227,6 +1248,8 @@ function renderSettings(s){var L=s.live,m=s.meta,h='';
   el('settings').innerHTML=h;el('ro').innerHTML='Data dir: '+m.dataDir+'<br>'+m.restartNote;fetchUsage();
   var pkb=el('packbtn');if(pkb)pkb.onclick=doPack;
   var ma=el('mirroragents');if(ma){ma.checked=(localStorage.zx_mirror!=='0');ma.onchange=function(){localStorage.zx_mirror=ma.checked?'1':'0'}}
+  var asb=el('autostart');if(asb){fetch('/api/autostart',{headers:hdrs()}).then(function(r){return r.ok?r.json():null}).then(function(st){if(!st)return;asb.checked=!!st.enabled;if(!st.supported)asb.disabled=true;var ad=el('autostatus');if(ad)ad.textContent=st.note||''}).catch(function(){});
+    asb.onchange=function(){var ad=el('autostatus');if(ad)ad.textContent='...';fetch('/api/autostart',{method:'POST',headers:hdrs(),body:JSON.stringify({enabled:asb.checked})}).then(function(r){return r.json()}).then(function(st){asb.checked=!!st.enabled;if(ad)ad.textContent=st.note||''}).catch(function(){if(ad)ad.textContent='Failed.'})}}
   var unb=el('uninstallbtn');if(unb)unb.onclick=doUninstall;
   var cub=el('checkupd');if(cub)cub.onclick=function(){var r=el('updres');cub.disabled=true;if(r)r.textContent='checking...';
     fetch('/api/checkupdate',{method:'POST',headers:hdrs()}).then(function(x){return x.ok?x.json():null}).then(function(u){cub.disabled=false;if(!r)return;
