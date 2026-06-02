@@ -462,6 +462,30 @@ export class Engine {
     return { ok: true, spec: spec || undefined, executor: finalExecutor, skills: applied.skills, codeTools: applied.codeTools, risk, schedule: scheduled };
   }
 
+  /** ANALYZE: the smartest model reviews what the agent has actually produced (recent runs) against
+   *  its job and rewrites the execution spec to make future results better. */
+  async analyzeAgent(name: string): Promise<{ ok: boolean; assessment?: string; changed?: boolean; note?: string }> {
+    const store = this.deps.agentStore;
+    const def = store?.get(name);
+    if (!store || !def) return { ok: false, note: 'no such agent' };
+    const recent = (this.deps.sessionIndex?.recent(`agent:${def.name}`, 12) ?? [])
+      .map((t) => `[${t.role}] ${String(t.text).slice(0, 500)}`)
+      .join('\n');
+    const system =
+      'You IMPROVE a focused agent. Given its JOB, its current EXECUTION SPEC (the literal instructions a small executor model follows), and a sample of its RECENT OUTPUTS, judge whether the outputs actually satisfy the job. Then rewrite the SPEC so future results are better — clearer, more literal, and fixing whatever caused weak or wrong outputs. Assume the executor is a small model that needs explicit, unambiguous steps. ' +
+      'Return ONLY one JSON object: {"assessment": string (2-4 sentences: what works, what is wrong), "improvedSpec": string (the FULL revised spec), "changed": boolean (true only if you actually improved it)}.';
+    const prompt =
+      `JOB:\n${def.job}\n\nCURRENT SPEC:\n${def.spec || '(none — it runs on the raw job)'}\n\nRECENT OUTPUTS (newest first):\n${recent || '(no runs recorded yet)'}\n\nJSON:`;
+    const raw = await this.oneShotClaude(system, prompt, this.deps.config.smartModel || this.deps.config.model);
+    const o = this.parseJsonObject(raw);
+    if (!o) return { ok: false, note: 'analyzer returned unparseable output' };
+    const improved = typeof o.improvedSpec === 'string' ? o.improvedSpec.trim() : '';
+    const changed = !!o.changed && improved.length > 10 && improved !== (def.spec || '').trim();
+    if (changed) store.attachPlan(def.name, { spec: improved });
+    logger.info({ name: def.name, changed }, 'agent analyzed');
+    return { ok: true, assessment: typeof o.assessment === 'string' ? o.assessment : '', changed };
+  }
+
   /** Author the planner's new skills + write its generated code tools to disk. */
   private applyPlan(
     agentName: string,

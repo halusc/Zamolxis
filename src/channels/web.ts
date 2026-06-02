@@ -169,6 +169,8 @@ export class WebChannel implements Channel {
     private readonly nlToCron?: (text: string) => Promise<{ cron?: string; note: string }>,
     /** Stop (suspend all schedules + halt) or resume an agent. */
     private readonly stopAgent?: (name: string, stop: boolean) => Promise<{ ok: boolean; suspended: number; stopped: boolean }>,
+    /** Analyze an agent: smart model reviews recent outputs and improves its spec. */
+    private readonly analyzeAgent?: (name: string) => Promise<{ ok: boolean; assessment?: string; changed?: boolean; note?: string }>,
   ) {
     const { bind, authToken } = config.web;
     if (!LOOPBACK.includes(bind) && !authToken) {
@@ -535,6 +537,11 @@ export class WebChannel implements Channel {
               const r = await this.stopAgent(String(o.name || ''), o.stop !== false);
               return this.json(res, 200, { ok: r.ok, stopped: r.stopped, suspended: r.suspended, agents: this.agentStore.list(), schedules: this.listAgentSchedules ? this.listAgentSchedules() : [] });
             }
+            if (action === 'analyze') {
+              if (!this.analyzeAgent) return this.json(res, 400, { error: 'analyze unavailable' });
+              const r = await this.analyzeAgent(String(o.name || ''));
+              return this.json(res, 200, { ok: r.ok, assessment: r.assessment, changed: r.changed, note: r.note, agents: this.agentStore.list() });
+            }
             if (action === 'schedules') {
               return this.json(res, 200, { ok: true, schedules: this.listAgentSchedules ? this.listAgentSchedules() : [] });
             }
@@ -870,8 +877,9 @@ function renderAgents(){var box=el('agentrail');if(!box)return;
   if(!AGENTS.length){box.innerHTML='<div style="color:var(--mut);font-size:11px;padding:2px 7px">none yet</div>';return}
   box.innerHTML=AGENTS.map(function(a){
     var sl=schedsFor(a.name).map(function(s){return '<div style="font-size:10px;color:var(--mut);margin-left:8px;margin-top:1px">\\u23F0 '+esc(s.cron||s.at||'')+' <span class="ascd" data-id="'+esc(s.id)+'" title="cancel" style="color:#e88;cursor:pointer">\\u00d7</span></div>'}).join('');
-    return '<div style="padding:4px 7px"><div style="font-size:12px" title="'+esc(a.job)+'">'+esc(a.label||a.name)+' <span style="color:var(--mut);font-size:10px">['+esc(a.model)+(a.canElevate?'\\u2191':'')+']</span>'+((a.risk&&a.risk.level&&a.risk.level!=='low')?(' <span title="'+esc(a.risk.note||'')+'" style="color:'+(a.risk.level==='high'?'#e06a5f':'#e0a55f')+';font-size:10px">\\u26A0 '+esc(a.risk.level)+'</span>'):'')+((a.stopped)?' <span style="color:var(--mut);font-size:10px">[stopped]</span>':'')+'</div><div style="margin-top:1px"><span class="arun" data-n="'+esc(a.name)+'" style="color:var(--accent);cursor:pointer;font-size:11px">run</span><span class="asch" data-n="'+esc(a.name)+'" style="color:var(--accent);cursor:pointer;font-size:11px;margin-left:10px">schedule</span><span class="astp" data-n="'+esc(a.name)+'" data-stop="'+(a.stopped?'0':'1')+'" style="color:'+(a.stopped?'#7dd08a':'#e0a55f')+';cursor:pointer;font-size:11px;margin-left:10px">'+(a.stopped?'resume':'stop')+'</span><span class="adel" data-n="'+esc(a.name)+'" style="color:#e88;cursor:pointer;font-size:11px;margin-left:10px">delete</span></div>'+sl+'</div>'}).join('');
+    return '<div style="padding:4px 7px"><div style="font-size:12px" title="'+esc(a.job)+'">'+esc(a.label||a.name)+' <span style="color:var(--mut);font-size:10px">['+esc(a.model)+(a.canElevate?'\\u2191':'')+']</span>'+((a.risk&&a.risk.level&&a.risk.level!=='low')?(' <span title="'+esc(a.risk.note||'')+'" style="color:'+(a.risk.level==='high'?'#e06a5f':'#e0a55f')+';font-size:10px">\\u26A0 '+esc(a.risk.level)+'</span>'):'')+((a.stopped)?' <span style="color:var(--mut);font-size:10px">[stopped]</span>':'')+'</div><div style="margin-top:1px"><span class="arun" data-n="'+esc(a.name)+'" style="color:var(--accent);cursor:pointer;font-size:11px">run</span><span class="aana" data-n="'+esc(a.name)+'" style="color:var(--accent);cursor:pointer;font-size:11px;margin-left:10px">analyze</span><span class="asch" data-n="'+esc(a.name)+'" style="color:var(--accent);cursor:pointer;font-size:11px;margin-left:10px">schedule</span><span class="astp" data-n="'+esc(a.name)+'" data-stop="'+(a.stopped?'0':'1')+'" style="color:'+(a.stopped?'#7dd08a':'#e0a55f')+';cursor:pointer;font-size:11px;margin-left:10px">'+(a.stopped?'resume':'stop')+'</span><span class="adel" data-n="'+esc(a.name)+'" style="color:#e88;cursor:pointer;font-size:11px;margin-left:10px">delete</span></div>'+sl+'</div>'}).join('');
   [].slice.call(box.querySelectorAll('.arun')).forEach(function(x){x.onclick=function(){runAgentUI(x.getAttribute('data-n'))}});
+  [].slice.call(box.querySelectorAll('.aana')).forEach(function(x){x.onclick=function(){analyzeAgentUI(x.getAttribute('data-n'))}});
   [].slice.call(box.querySelectorAll('.asch')).forEach(function(x){x.onclick=function(){scheduleAgentUI(x.getAttribute('data-n'))}});
   [].slice.call(box.querySelectorAll('.astp')).forEach(function(x){x.onclick=function(){stopAgentUI(x.getAttribute('data-n'),x.getAttribute('data-stop')==='1')}});
   [].slice.call(box.querySelectorAll('.ascd')).forEach(function(x){x.onclick=function(){cancelSched(x.getAttribute('data-id'))}});
@@ -880,6 +888,7 @@ function scheduleAgentUI(name){var when=prompt('When should "'+name+'" run? Say 
   showToast('Working out the schedule...');
   fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'schedule',name:name,when:when,task:task||undefined})}).then(function(r){return r.json()}).then(function(d){if(d&&d.ok){if(d.schedules){SCHEDS=d.schedules;renderAgents()}showToast('Scheduled: '+(d.note||d.cron));setTimeout(hideToast,2800)}else{showToast((d&&d.error)?d.error:'Schedule failed.');setTimeout(hideToast,3200)}}).catch(function(){showToast('Schedule failed.')})}
 function stopAgentUI(name,stop){fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'stop',name:name,stop:stop})}).then(function(r){return r.json()}).then(function(d){if(d){if(d.schedules)SCHEDS=d.schedules;loadAgents();showToast(stop?('Stopped "'+name+'" ('+(d.suspended||0)+' schedule(s) suspended)'):('Resumed "'+name+'"'));setTimeout(hideToast,2500)}}).catch(function(){showToast('Action failed.')})}
+function analyzeAgentUI(name){showToast('Analyzing "'+name+'" with the smart model...');fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'analyze',name:name})}).then(function(r){return r.json()}).then(function(d){loadAgents();hideToast();if(d&&d.ok){alert('Analysis of "'+name+'":\\n\\n'+(d.assessment||'(no assessment)')+'\\n\\n'+(d.changed?'\\u2713 The prompt was improved.':'No change needed.'))}else{showToast((d&&d.note)?d.note:'Analyze failed.');setTimeout(hideToast,3000)}}).catch(function(){showToast('Analyze failed.')})}
 function cancelSched(id){if(!confirm('Cancel this schedule?'))return;fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'unschedule',id:id})}).then(function(r){return r.ok?r.json():null}).then(function(d){if(d&&d.schedules){SCHEDS=d.schedules;renderAgents()}}).catch(function(){})}
 function runAgentUI(name){var task=prompt('Task for "'+name+'" (blank = its standard job):','');if(task===null)return;switchView('chat');var m=add('bot',name,'(running '+name+'...)');setStatus('agent '+name+' running...');
   fetch('/api/agents',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'run',name:name,task:task||undefined})}).then(function(r){return r.ok?r.json():null}).then(function(d){setStatus('');if(m)m.textContent=(d&&d.reply)?d.reply:'(no reply)'}).catch(function(){setStatus('');if(m)m.textContent='(agent run failed)'})}

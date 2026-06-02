@@ -156,7 +156,8 @@ async function main(): Promise<void> {
         (id) => scheduler.cancel(id),
         (n) => engine.compileAgent(n),
         (text) => engine.nlToCron(text),
-        (n, stop) => engine.stopAgent(n, stop))],
+        (n, stop) => engine.stopAgent(n, stop),
+        (n) => engine.analyzeAgent(n))],
     ];
     for (const [enabled, make] of factories) {
       if (!enabled) continue;
