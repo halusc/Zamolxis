@@ -897,28 +897,39 @@ function tokMatch(tok,d){var u=(LAST_USED||'').toLowerCase();if(!u)return false;
 /* Model "smartness" color: lightest green = on-device/dumbest, blue = Claude/smartest. Same scale
    used in the rail and on each answer's header, so a model change is visible at a glance. */
 function gradColor(r){r=Math.max(0,Math.min(1,r));var g=[125,208,138],b=[90,160,224];return 'rgb('+Math.round(g[0]+(b[0]-g[0])*r)+','+Math.round(g[1]+(b[1]-g[1])*r)+','+Math.round(g[2]+(b[2]-g[2])*r)+')'}
-// Color by POSITION in the active chain: each model gets its own evenly-spaced shade from green
-// (first = on-device/weakest) to blue (last = Claude/strongest). So every provider is distinct.
-var RAIL_FLAT=[];
-function rankOfToken(tok){var n=RAIL_FLAT.length;if(n>1){var i=RAIL_FLAT.indexOf(tok);if(i>=0)return i/(n-1)}return tok==='local'?0:tok==='claude'?1:.5}
-function tokenFromModel(id){id=String(id||'').toLowerCase();var m=id.match(/^(?:free|paid):([^:]+):/);if(m)return m[1];if(id.indexOf('local:')===0)return 'local';if(/claude|opus|sonnet|haiku/.test(id))return 'claude';if(/qwen|gemma|phi|llama/.test(id))return 'local';return ''}
-function viaColor(id){var tok=tokenFromModel(id);return gradColor(tok?rankOfToken(tok):.5)}
+// Color by model CAPABILITY (how smart it is), not chain order: small on-device models -> green,
+// frontier models (Claude Opus, GPT-4/o-series, Gemini Pro, big 70B+/MoE) -> blue. Heuristic from
+// the model name + parameter size.
+function smartScore(name){name=String(name||'').toLowerCase();if(!name)return .5;
+  if(/opus/.test(name))return 1;
+  if(/gpt-?4|gpt4o|\bo1\b|\bo3\b/.test(name))return .92;
+  if(/sonnet/.test(name))return .82;
+  if(/haiku|flash/.test(name))return .55;
+  if(/gemini[-\s.]?(1\.5[-\s.]?)?pro|gemini[-\s.]?2|gemini[-\s.]?ultra/.test(name))return .8;
+  if(/\blarge\b/.test(name))return .68;
+  if(/deepseek[-\s.]?(v3|r1)|qwen[-\s.]?(2\.5[-\s.]?)?(72b|max)|405b|llama[-\s.]?3\.[13][-\s.]?70b/.test(name))return .72;
+  if(/mixtral|8x7b|gemma2?[-\s.]?27b|command[-\s.]?r|32b/.test(name))return .55;
+  var mm=name.match(/(\d+(?:\.\d+)?)\s*b(?![a-z0-9])/);if(mm){var b=parseFloat(mm[1]);if(b>=180)return .85;if(b>=60)return .7;if(b>=27)return .5;if(b>=12)return .35;if(b>=6)return .22;return .15}
+  if(/qwen|llama|gemma|phi|mistral[-\s.]?7|tinyllama|smollm/.test(name))return .2;
+  return .5}
+function modelNameOf(id){return String(id||'').replace(/^(?:free|paid):[^:]+:/,'').replace(/^local:/,'')}
+function rankForTok(d,tok){if(tok==='local')return smartScore(d.localModel);if(tok==='claude')return smartScore((d.claude&&d.claude.model)||'opus');if(tok==='freecloud')return .5;var pp=(d.providers||[]).filter(function(p){return p.id===tok})[0];return pp?smartScore(pp.model):.5}
+function viaColor(id){return gradColor(smartScore(modelNameOf(id)))}
 function railItem(d,tok,rank){var label=tok,color=C_OFF,title=tok;
   if(tok==='local'){label='Local';color=d.localModel?C_OK:C_OFF;title=d.localModel||'no on-device model'}
   else if(tok==='claude'){label='Claude';var c=d.claude||{};color=c.found?(c.expired?C_BAD:C_OK):C_WARN;title='subscription'}
   else if(tok==='freecloud'){label='Free cloud';var any=(d.providers||[]).some(function(p){return p.kind==='free'&&freeReady(p)});color=any?C_OK:C_BAD;title='rotates free providers'}
   else{var pp=(d.providers||[]).filter(function(p){return p.id===tok})[0];if(pp){label=pp.label;var lim=pp.freeDaily&&pp.used>=pp.freeDaily;color=!pp.configured?C_OFF:(lim?C_BAD:C_OK);title=pp.kind}}
   var used=tokMatch(tok,d);
-  return '<div title="'+esc(title)+'" style="display:flex;align-items:center;gap:7px;padding:6px 7px;border-radius:7px;margin-bottom:4px;'+(used?'background:rgba(212,165,90,.14);border:1px solid var(--accent)':'border:1px solid transparent')+'">'+dotHtml(color,title)+'<span style="flex:1;color:'+gradColor(rank==null?rankOfToken(tok):rank)+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(label)+'</span>'+(used?'<span style="color:var(--accent);font-size:10px">last</span>':'')+'</div>'}
+  return '<div title="'+esc(title)+'" style="display:flex;align-items:center;gap:7px;padding:6px 7px;border-radius:7px;margin-bottom:4px;'+(used?'background:rgba(212,165,90,.14);border:1px solid var(--accent)':'border:1px solid transparent')+'">'+dotHtml(color,title)+'<span style="flex:1;color:'+gradColor(rankForTok(d,tok))+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(label)+'</span>'+(used?'<span style="color:var(--accent);font-size:10px">last</span>':'')+'</div>'}
 function renderRail(){var box=el('provchain');if(!box)return;var d=RAIL;if(!d){box.innerHTML='';return}
   var chain=d.routeChain||[];
   // Flatten (freecloud -> each configured free provider) into the displayed order, then color each
   // by its position so the gradient spans every model, not just two buckets.
   var flat=[];chain.forEach(function(tok){if(tok==='freecloud'){var fps=(d.providers||[]).filter(function(p){return p.kind==='free'&&p.configured});if(fps.length)fps.forEach(function(p){flat.push(p.id)});else flat.push('freecloud')}else flat.push(tok)});
-  RAIL_FLAT=flat;
   var h='<div style="color:var(--mut);text-transform:uppercase;font-size:10px;letter-spacing:.5px;margin:2px 4px 8px">Active chain</div>';
   if(!flat.length)h+='<div style="color:var(--mut);padding:4px 7px">none</div>';
-  flat.forEach(function(tok,i){h+=railItem(d,tok,flat.length>1?i/(flat.length-1):0)});
+  flat.forEach(function(tok){h+=railItem(d,tok)});
   h+='<div id="raillink" style="color:var(--mut);font-size:10px;margin:9px 4px 4px;cursor:pointer">edit in Providers &#8594;</div>';
   box.innerHTML=h;var lk=el('raillink');if(lk)lk.onclick=function(){el('provbtn').click()};loadAgents()}
 function loadRail(){fetch('/api/providers',{headers:hdrs()}).then(function(r){return r.ok?r.json():null}).then(function(d){if(d){RAIL=d;renderRail();rebuildRouteSelect();if(LASTD)renderModels(LASTD)}}).catch(function(){})}
