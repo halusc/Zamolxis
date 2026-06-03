@@ -874,13 +874,20 @@ function tokMatch(tok,d){var u=(LAST_USED||'').toLowerCase();if(!u)return false;
   if(tok==='claude')return /claude|opus|sonnet|haiku/.test(u);
   if(tok==='freecloud')return (d.providers||[]).some(function(p){return p.kind==='free'&&u.indexOf(String(p.model).toLowerCase())>=0});
   var pp=(d.providers||[]).filter(function(p){return p.id===tok})[0];return !!(pp&&u.indexOf(String(pp.model).toLowerCase())>=0)}
+/* Model "smartness" color: lightest green = on-device/dumbest, blue = Claude/smartest. Same scale
+   used in the rail and on each answer's header, so a model change is visible at a glance. */
+function gradColor(r){r=Math.max(0,Math.min(1,r));var g=[125,208,138],b=[90,160,224];return 'rgb('+Math.round(g[0]+(b[0]-g[0])*r)+','+Math.round(g[1]+(b[1]-g[1])*r)+','+Math.round(g[2]+(b[2]-g[2])*r)+')'}
+function tierRank(tok){if(tok==='local')return 0;if(tok==='freecloud')return .35;if(tok==='claude')return 1;var pp=(RAIL&&RAIL.providers||[]).filter(function(p){return p.id===tok})[0];if(pp)return pp.kind==='free'?.4:.65;return .5}
+function tierColor(tok){return gradColor(tierRank(tok))}
+function viaRank(id){id=String(id||'').toLowerCase();if(/opus/.test(id))return 1;if(/sonnet/.test(id))return .85;if(/haiku/.test(id))return .68;if(/claude/.test(id))return .9;if(id.indexOf('local:')===0||/qwen|llama|gemma|phi|mistral-?7/.test(id))return 0;if(id.indexOf('free:')===0)return .4;if(id.indexOf('paid:')===0)return .65;return .5}
+function viaColor(id){return gradColor(viaRank(id))}
 function railItem(d,tok){var label=tok,color=C_OFF,title=tok;
   if(tok==='local'){label='Local';color=d.localModel?C_OK:C_OFF;title=d.localModel||'no on-device model'}
   else if(tok==='claude'){label='Claude';var c=d.claude||{};color=c.found?(c.expired?C_BAD:C_OK):C_WARN;title='subscription'}
   else if(tok==='freecloud'){label='Free cloud';var any=(d.providers||[]).some(function(p){return p.kind==='free'&&freeReady(p)});color=any?C_OK:C_BAD;title='rotates free providers'}
   else{var pp=(d.providers||[]).filter(function(p){return p.id===tok})[0];if(pp){label=pp.label;var lim=pp.freeDaily&&pp.used>=pp.freeDaily;color=!pp.configured?C_OFF:(lim?C_BAD:C_OK);title=pp.kind}}
   var used=tokMatch(tok,d);
-  return '<div title="'+esc(title)+'" style="display:flex;align-items:center;gap:7px;padding:6px 7px;border-radius:7px;margin-bottom:4px;'+(used?'background:rgba(212,165,90,.14);border:1px solid var(--accent)':'border:1px solid transparent')+'">'+dotHtml(color,title)+'<span style="flex:1;color:'+color+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(label)+'</span>'+(used?'<span style="color:var(--accent);font-size:10px">last</span>':'')+'</div>'}
+  return '<div title="'+esc(title)+'" style="display:flex;align-items:center;gap:7px;padding:6px 7px;border-radius:7px;margin-bottom:4px;'+(used?'background:rgba(212,165,90,.14);border:1px solid var(--accent)':'border:1px solid transparent')+'">'+dotHtml(color,title)+'<span style="flex:1;color:'+tierColor(tok)+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(label)+'</span>'+(used?'<span style="color:var(--accent);font-size:10px">last</span>':'')+'</div>'}
 function renderRail(){var box=el('provchain');if(!box)return;var d=RAIL;if(!d){box.innerHTML='';return}
   var chain=d.routeChain||[];
   var h='<div style="color:var(--mut);text-transform:uppercase;font-size:10px;letter-spacing:.5px;margin:2px 4px 8px">Active chain</div>';
@@ -991,7 +998,7 @@ function fmtTime(ts){try{return new Date(Number(ts)).toLocaleTimeString([], {hou
    is re-renderable so a name change relabels every past bubble too. */
 function renderWho(w){if(!w)return;var t=w.dataset.ts?fmtTime(w.dataset.ts):'';
   if(w.dataset.role==='you'){w.textContent='you'+(t?' · '+t:'')}
-  else{var s=w.dataset.secs,tok=w.dataset.tok,via=w.dataset.via;var x=(w.dataset.label||BOT_LABEL)+(t?' · '+t:'');if(s)x+=' · '+s+'s';if(tok)x+=' · '+tok+' tok';if(via)x+=' · via '+via;w.textContent=x}}
+  else{var s=w.dataset.secs,tok=w.dataset.tok,via=w.dataset.via;var x=(w.dataset.label||BOT_LABEL)+(t?' · '+t:'');if(s)x+=' · '+s+'s';if(tok)x+=' · '+tok+' tok';if(via)x+=' · via '+via;w.textContent=x;w.style.color=via?viaColor(via):''}}
 /* Human label for the model that produced an answer (from usage.last.model). */
 function viaLabel(id){if(!id)return '';id=String(id);
   var m=id.match(/^(?:free|paid):([^:]+):/);if(m){var pp=(RAIL&&RAIL.providers||[]).filter(function(p){return p.id===m[1]})[0];return pp?pp.label:m[1]}
