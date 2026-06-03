@@ -49,7 +49,27 @@ const pexec = promisify(execFile);
 // Resolve a usable `git` even when the daemon's PATH is minimal (common on macOS when started
 // detached / via a launcher — git is at /usr/bin/git but may not be on the inherited PATH).
 function resolveGit(): string {
-  const cands = process.platform === 'win32' ? ['git'] : ['git', '/usr/bin/git', '/opt/homebrew/bin/git', '/usr/local/bin/git'];
+  const cands: string[] = ['git'];
+  if (process.platform === 'win32') {
+    // Git is often NOT on the daemon's PATH (esp. when started via autostart/login). Probe the
+    // standard install locations and `where git` so update-check works regardless of PATH.
+    try {
+      const w = spawnSync('where', ['git'], { encoding: 'utf8', windowsHide: true });
+      if (w.status === 0) {
+        const first = (w.stdout || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean)[0];
+        if (first) cands.push(first);
+      }
+    } catch {
+      /* where unavailable */
+    }
+    const pf = process.env['ProgramFiles'] || 'C:\\Program Files';
+    const pf86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
+    const la = process.env['LOCALAPPDATA'] || '';
+    cands.push(path.join(pf, 'Git', 'cmd', 'git.exe'), path.join(pf, 'Git', 'bin', 'git.exe'), path.join(pf86, 'Git', 'cmd', 'git.exe'));
+    if (la) cands.push(path.join(la, 'Programs', 'Git', 'cmd', 'git.exe'));
+  } else {
+    cands.push('/usr/bin/git', '/opt/homebrew/bin/git', '/usr/local/bin/git');
+  }
   for (const c of cands) {
     try {
       if (spawnSync(c, ['--version'], { stdio: 'ignore', windowsHide: true }).status === 0) return c;
@@ -1357,7 +1377,7 @@ function renderSettings(s){var L=s.live,m=s.meta,h='';
   var unb=el('uninstallbtn');if(unb)unb.onclick=doUninstall;
   var cub=el('checkupd');if(cub)cub.onclick=function(){var r=el('updres');cub.disabled=true;if(r)r.textContent='checking...';
     fetch('/api/checkupdate',{method:'POST',headers:hdrs()}).then(function(x){return x.ok?x.json():null}).then(function(u){cub.disabled=false;if(!r)return;
-      if(!u||!u.isRepo){r.innerHTML='Not a git install - can\\'t auto-update here.';return}
+      if(!u||!u.isRepo){r.innerHTML='Can\\'t auto-update: no git checkout found, or git isn\\'t on the server\\'s PATH. Update manually in the install folder: git pull, npm run build, restart.';return}
       if(u.behind>0){r.innerHTML='<b style="color:var(--accent)">Update available: '+u.behind+' new.</b> ';var ub=document.createElement('button');ub.type='button';ub.textContent='Update now';ub.style.marginLeft='6px';ub.onclick=doUpdate;r.appendChild(ub);fetchStatus()}
       else{r.textContent='You are up to date (build matches GitHub).'}
     }).catch(function(){cub.disabled=false;if(r)r.textContent='check failed.'})};
