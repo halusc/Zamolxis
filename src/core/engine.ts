@@ -183,7 +183,10 @@ function looksLikePunt(text: string): boolean {
 function mentionsSelf(text: string): boolean {
   const t = (text ?? '').trim();
   if (!t || t.length > 1500) return false;
-  return /\b(i'?m|i am|i like|i prefer|i'?d prefer|i hate|i don'?t like|my name|call me|i live|i'?m from|i'?m based|i work|i use|i usually|i always|i never|remember (that|this|i)|note that|for (future|next time)|keep in mind|my (timezone|time zone|email|birthday|phone|job|role|setup|stack|preference))\b/i.test(t);
+  if (/\b(i'?m|i am|i like|i prefer|i'?d prefer|i hate|i don'?t like|my name|call me|i live|i'?m from|i'?m based|i work|i use|i usually|i always|i never|remember (that|this|i)|note that|for (future|next time)|keep in mind|my (timezone|time zone|email|birthday|phone|job|role|setup|stack|preference))\b/i.test(t)) return true;
+  // Standing directives about how to respond (esp. language) — these are durable preferences too,
+  // e.g. "answer me only in English", "from now on reply in French", "always respond in Romanian".
+  return /\b(from now on|always (answer|reply|respond|speak|write|use)|(answer|reply|respond|speak|write|talk)( to me)?( only| always)? in\b|only (answer|reply|respond|speak|write|in)\b|prefer(red)? language|(respond|reply|answer|write|speak) (only |always )?in (english|french|italian|romanian|spanish|german|portuguese|dutch)|in (english|french|italian|romanian|spanish|german|portuguese|dutch) only)\b/i.test(t);
 }
 
 /**
