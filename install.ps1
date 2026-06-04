@@ -179,21 +179,25 @@ if ($hasGpu) { Write-Host "    Dedicated GPU detected - models will be GPU-accel
 
 # Curated catalog (small -> large). Need = approx GB to run the Q4 build comfortably.
 # We only OFFER the models that fit this machine, each with a one-line strength.
+# All-rounder / general-chat models only (NOT code-tuned), every one tool-capable in Ollama
+# (the local tier runs an OpenAI tool-call loop). Need = approx GB to run the Q4 build comfortably.
 $catalog = @(
-  @{ Id = 'qwen2.5:1.5b';      Need = 2;  Str = 'tiny & fast - fine for routing / simple offload' }
-  @{ Id = 'llama3.2:3b';       Need = 4;  Str = 'fast, lightweight general chat; broad knowledge' }
-  @{ Id = 'qwen2.5:3b';        Need = 4;  Str = 'strong tool use for its size - solid small default' }
-  @{ Id = 'qwen2.5-coder:7b';  Need = 6;  Str = 'tuned for code: generation, review, refactors' }
-  @{ Id = 'qwen2.5:7b';        Need = 6;  Str = 'best all-round: instruction following + tool use' }
-  @{ Id = 'deepseek-r1:8b';    Need = 7;  Str = 'step-by-step reasoning & math (thinks first, slower)' }
-  @{ Id = 'qwen2.5:14b';       Need = 10; Str = 'noticeably smarter, broader knowledge - slower' }
-  @{ Id = 'qwen2.5-coder:14b'; Need = 10; Str = 'strongest coding model that fits a large GPU' }
-  @{ Id = 'qwen2.5:32b';       Need = 22; Str = 'smartest local option - needs a big GPU' }
+  @{ Id = 'llama3.2:1b';   Need = 2;  Str = 'tiny & fast - routing / simple offload (general, tools)' }
+  @{ Id = 'llama3.2:3b';   Need = 4;  Str = 'light all-rounder, fully GPU; broad general chat' }
+  @{ Id = 'mistral:7b';    Need = 5;  Str = 'lean, friendly general chat - fast' }
+  @{ Id = 'llama3.1:8b';   Need = 6;  Str = 'dependable all-rounder + reliable tool calling' }
+  @{ Id = 'hermes3:8b';    Need = 6;  Str = 'most natural general chat (Llama-3.1 tune), strong tools' }
+  @{ Id = 'mistral-nemo';  Need = 8;  Str = 'smarter all-rounder, multilingual (uses RAM on small GPUs)' }
+  @{ Id = 'mixtral:8x7b';  Need = 26; Str = 'strong general MoE - needs a big GPU' }
+  @{ Id = 'llama3.3:70b';  Need = 42; Str = 'best local general model - needs a large GPU' }
 )
 $fit = @($catalog | Where-Object { $_.Need -le $effCap })
-if (-not $fit.Count) { $fit = @($catalog[0]) }   # tiny machines: at least the 1.5b
-# Recommended = the largest general qwen2.5 that fits (the well-rounded default for Zamolxis).
-$recId = ($fit | Where-Object { $_.Id -match '^qwen2\.5:' } | Select-Object -Last 1).Id
+if (-not $fit.Count) { $fit = @($catalog[0]) }   # tiny machines: at least the smallest
+# Recommended = the best general all-rounder that fits. hermes3:8b is the sweet spot from ~6GB up;
+# smaller machines fall back down the preference list. -Bigger shifts to the largest that fits.
+$prefer = @('hermes3:8b','llama3.1:8b','mistral:7b','mistral-nemo','llama3.2:3b','llama3.2:1b')
+$recId = $null
+foreach ($p in $prefer) { if ($fit.Id -contains $p) { $recId = $p; break } }
 if (-not $recId) { $recId = $fit[-1].Id }
 $defaultId = if ($Bigger) { $fit[-1].Id } else { $recId }
 

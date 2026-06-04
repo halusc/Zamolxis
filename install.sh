@@ -173,18 +173,24 @@ CAPABLE=0; if [ "$HAS_GPU" -eq 1 ] || [ "$RAM_GB" -ge 8 ]; then CAPABLE=1; fi
 
 # Curated catalog (small -> large): id | approx GB to run the Q4 build comfortably | strength.
 # We only OFFER the models that fit this machine, each with a one-line strength.
-CAT_ID=( "qwen2.5:1.5b" "llama3.2:3b" "qwen2.5:3b" "qwen2.5-coder:7b" "qwen2.5:7b" "deepseek-r1:8b" "qwen2.5:14b" "qwen2.5-coder:14b" "qwen2.5:32b" )
-CAT_NEED=( 2 4 4 6 6 7 10 10 22 )
-CAT_STR=( "tiny & fast - fine for routing / simple offload" "fast, lightweight general chat; broad knowledge" "strong tool use for its size - solid small default" "tuned for code: generation, review, refactors" "best all-round: instruction following + tool use" "step-by-step reasoning & math (thinks first, slower)" "noticeably smarter, broader knowledge - slower" "strongest coding model that fits a large GPU" "smartest local option - needs a big GPU" )
+# All-rounder / general-chat models only (NOT code-tuned), every one tool-capable in Ollama
+# (the local tier runs an OpenAI tool-call loop).
+CAT_ID=( "llama3.2:1b" "llama3.2:3b" "mistral:7b" "llama3.1:8b" "hermes3:8b" "mistral-nemo" "mixtral:8x7b" "llama3.3:70b" )
+CAT_NEED=( 2 4 5 6 6 8 26 42 )
+CAT_STR=( "tiny & fast - routing / simple offload (general, tools)" "light all-rounder, fully GPU; broad general chat" "lean, friendly general chat - fast" "dependable all-rounder + reliable tool calling" "most natural general chat (Llama-3.1 tune), strong tools" "smarter all-rounder, multilingual (uses RAM on small GPUs)" "strong general MoE - needs a big GPU" "best local general model - needs a large GPU" )
 
 FIT_ID=(); FIT_STR=()
 for i in "${!CAT_ID[@]}"; do
   if [ "${CAT_NEED[$i]}" -le "$EFFCAP" ]; then FIT_ID+=( "${CAT_ID[$i]}" ); FIT_STR+=( "${CAT_STR[$i]}" ); fi
 done
 if [ "${#FIT_ID[@]}" -eq 0 ]; then FIT_ID=( "${CAT_ID[0]}" ); FIT_STR=( "${CAT_STR[0]}" ); fi
-# Recommended = the largest general qwen2.5 that fits; --bigger shifts the default to the largest fit.
+# Recommended = the best general all-rounder that fits (hermes3:8b is the sweet spot from ~6GB up);
+# --bigger shifts the default to the largest that fits.
 REC_ID=""
-for id in "${FIT_ID[@]}"; do case "$id" in qwen2.5:*) REC_ID="$id" ;; esac; done
+for p in "hermes3:8b" "llama3.1:8b" "mistral:7b" "mistral-nemo" "llama3.2:3b" "llama3.2:1b"; do
+  for id in "${FIT_ID[@]}"; do [ "$id" = "$p" ] && REC_ID="$p" && break; done
+  [ -n "$REC_ID" ] && break
+done
 [ -z "$REC_ID" ] && REC_ID="${FIT_ID[$(( ${#FIT_ID[@]} - 1 ))]}"
 if [ "$BIGGER" -eq 1 ]; then DEFAULT_ID="${FIT_ID[$(( ${#FIT_ID[@]} - 1 ))]}"; else DEFAULT_ID="$REC_ID"; fi
 
