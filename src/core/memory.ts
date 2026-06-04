@@ -305,6 +305,18 @@ export class MemoryManager {
   learningsUsage(): MemoryUsage {
     return this.docUsage(this.learnFile, LEARNINGS_MAX);
   }
+  /** Caps (chars) — so the engine's consolidation pass knows the target size. */
+  learningsMax(): number { return LEARNINGS_MAX; }
+  memoryMax(): number { return MEMORY_MAX; }
+  /** Replace the WHOLE learnings file (used by the consolidation pass; keeps the FTS index in sync). */
+  setLearningsList(entries: string[]): void {
+    this.docWrite(this.learnFile, null, entries);
+    this.learnings.reindex(this.learningsList());
+  }
+  /** Replace the WHOLE memory file (used by the consolidation pass). */
+  setMemoryList(entries: string[]): void {
+    this.docWrite(this.memFile, null, entries);
+  }
   addLearning(text: string): { ok: boolean; message: string } {
     const t = (text ?? '').trim();
     if (!t || /^none\.?$/i.test(t)) return { ok: false, message: 'Nothing durable to learn — skipped.' };
