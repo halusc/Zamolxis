@@ -94,7 +94,7 @@ export interface EngineDeps {
   /** User-defined agents (named jobs that run on any tier). */
   agentStore?: AgentStore;
   /** Sink for agent messages (to other agents or the user) - delivered to channels + logged. */
-  onAgentMessage?: (msg: { from: string; to: string; text: string; ts: number }) => void;
+  onAgentMessage?: (msg: { from: string; to: string; text: string; ts: number; via?: string }) => void;
   /** Schedule a named agent on a cron (deterministic). Late-bound to the scheduler. */
   scheduleAgent?: (name: string, cron: string, task?: string) => void;
   /** How many schedules currently exist for an agent. Late-bound to the scheduler. */
@@ -566,6 +566,7 @@ export class Engine {
       agentTools: def.tools,
       elevate: def.canElevate,
     });
+    if (!r.isError && r.via) this.deps.agentStore?.setLastVia(def.name, r.via);
     return { ...r, agent: def.name };
   }
 
@@ -846,21 +847,21 @@ export class Engine {
 
   /** Deliver a message from an agent (or the assistant) to the user or another agent. To the user:
    *  surfaced to the UI/CLI via onAgentMessage. To an agent: bounded follow-up run (loop guard). */
-  async sendAgentMessage(from: string, to: string, text: string): Promise<string> {
+  async sendAgentMessage(from: string, to: string, text: string, via?: string): Promise<string> {
     const t = (text || '').trim();
     if (!t) return 'Nothing to send (empty message).';
     const ts = Date.now();
     if (/^user$/i.test(to)) {
-      this.deps.onAgentMessage?.({ from, to: 'user', text: t, ts });
+      this.deps.onAgentMessage?.({ from, to: 'user', text: t, ts, via });
       return 'Delivered to the user.';
     }
     const target = this.deps.agentStore?.get(to);
     if (!target) return `No agent named "${to}" (use "user" to message the user).`;
-    this.deps.onAgentMessage?.({ from, to: target.name, text: t, ts }); // surface inter-agent traffic too
+    this.deps.onAgentMessage?.({ from, to: target.name, text: t, ts, via }); // surface inter-agent traffic too
     if (AGENT_HOPS >= MAX_AGENT_HOPS) return `Loop guard: too many agent hops in flight, not running ${target.name}.`;
     AGENT_HOPS++;
     void this.runAgent(target.name, `Message from ${from}: ${t}`)
-      .then((r) => this.deps.onAgentMessage?.({ from: target.name, to: from, text: r.reply, ts: Date.now() }))
+      .then((r) => this.deps.onAgentMessage?.({ from: target.name, to: from, text: r.reply, ts: Date.now(), via: r.via }))
       .catch((err) => logger.warn({ err: String(err) }, 'agent-to-agent run failed'))
       .finally(() => { AGENT_HOPS = Math.max(0, AGENT_HOPS - 1); });
     return `Sent to agent "${target.name}"; it will act on it.`;
@@ -1598,8 +1599,50 @@ export class Engine {
     if (!fact || /^none\b/i.test(fact) || fact.length > 240) return;
     // Reject still-relative phrasing (should have been resolved) so stored facts never go stale.
     if (/\b(two nights ago|last night|yesterday|today|tonight|this (week|morning|evening|season))\b/i.test(fact)) return;
+    // Junk guard: reject meta/non-facts the extractor sometimes emits (e.g. "I don't have enough
+    // context to know what 'it' refers to"). A keeper is a third-person statement, not an apology/IDK.
+    if (/^(i\b|i'?m\b|sorry\b|the previous answer\b|i do not|i don'?t|i can'?t|i cannot|unable to|not enough context)/i.test(fact)) return;
+    if (fact.split(/\s+/).filter(Boolean).length < 3) return;
+    // Dedup: skip if a near-identical learning already exists (same normalized prefix).
+    const norm = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const nf = norm(fact);
+    if (this.deps.memory.learningsList().some((e) => { const ne = norm(e); return ne === nf || ne.slice(0, 60) === nf.slice(0, 60); })) return;
     const ok = this.deps.memory.addFact(fact);
-    if (ok) logger.info({ key: req.conversationKey, fact }, 'fact captured to knowledge store');
+    if (ok) { logger.info({ key: req.conversationKey, fact }, 'fact captured to knowledge store'); void this.maybeConsolidate(); }
+  }
+
+  /** When LEARNINGS / MEMORY near their cap, have the smart model consolidate (merge duplicates,
+   *  drop non-facts and stale/contradicted entries) so they stay lean instead of refusing new
+   *  entries on overflow. Runs at most one pass per doc at a time. */
+  private readonly consolidating = new Set<string>();
+  async maybeConsolidate(): Promise<void> {
+    const m = this.deps.memory;
+    if (m.learningsUsage().pct >= 80) void this.consolidateDoc('learnings');
+    if (m.usage().pct >= 80) void this.consolidateDoc('memory');
+  }
+  private async consolidateDoc(kind: 'learnings' | 'memory'): Promise<void> {
+    if (this.consolidating.has(kind)) return;
+    const m = this.deps.memory;
+    const entries = kind === 'learnings' ? m.learningsList() : m.list();
+    const max = kind === 'learnings' ? m.learningsMax() : m.memoryMax();
+    if (entries.length < 4) return;
+    this.consolidating.add(kind);
+    try {
+      const sys =
+        `You curate a small, bounded ${kind === 'learnings' ? 'LEARNINGS list (durable facts/procedures taught to a weaker model)' : "MEMORY list (the agent's working notes)"}. ` +
+        'Consolidate the bullets: MERGE duplicates and near-duplicates into one, DROP anything that is not a durable fact (apologies, "I do not know", meta-comments, one-off chatter) and anything stale or contradicted by a newer entry. Keep the specific facts, IDs, endpoints and numbers. ' +
+        `Stay UNDER ${max} characters total. Output ONLY the cleaned bullets, one per line starting with "- ", nothing else.`;
+      const raw = await this.oneShotClaude(sys, entries.map((e) => `- ${e}`).join('\n') + '\n\nCleaned list:', this.deps.config.smartModel || this.deps.config.model);
+      const cleaned = raw.split('\n').map((l) => l.replace(/^[-*\s]+/, '').trim()).filter((l) => l && !/^cleaned list/i.test(l));
+      if (!cleaned.length || cleaned.length > entries.length) return; // sanity: never grow
+      if (kind === 'learnings') m.setLearningsList(cleaned);
+      else m.setMemoryList(cleaned);
+      logger.info({ kind, before: entries.length, after: cleaned.length }, 'consolidated memory doc');
+    } catch (err) {
+      logger.warn({ kind, err: String(err) }, 'consolidation failed');
+    } finally {
+      this.consolidating.delete(kind);
+    }
   }
 
   /** Extract at most one NEW durable user fact from the message and store it in USER.md. */
