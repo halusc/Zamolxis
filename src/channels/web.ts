@@ -1227,7 +1227,7 @@ renderTaskbar();
 /* ---- Phase E: Interface window creation ---- */
 function parseIfaceWindows(msgText){
   var blocks=[];
-  var pattern=String.fromCharCode(96)+String.fromCharCode(96)+String.fromCharCode(96)+'iface-window\\r?\\n([\\s\\S]*?)\\r?\\n'+String.fromCharCode(96)+String.fromCharCode(96)+String.fromCharCode(96);
+  var pattern=String.fromCharCode(96)+String.fromCharCode(96)+String.fromCharCode(96)+'iface-window\\\\r?\\\\n([\\\\s\\\\S]*?)\\\\r?\\\\n'+String.fromCharCode(96)+String.fromCharCode(96)+String.fromCharCode(96);
   var re=new RegExp(pattern,'g'),m;
   while((m=re.exec(msgText))!==null){
     try{var data=JSON.parse(m[1]);blocks.push(data)}
@@ -1457,7 +1457,7 @@ function openWs(){
   sock.onclose=function(){if(myGen!==gen)return;setStatus('disconnected - retrying');setTimeout(function(){if(myGen===gen)openWs()},2000)};
   sock.onmessage=function(ev){if(myGen!==gen)return;var m=JSON.parse(ev.data);
     if(m.type==='chunk'){if(!cur)cur=add('bot',BOT_LABEL,'');if(!curStarted){cur.textContent='';curStarted=true}cur.textContent+=m.text;el('log').scrollTop=el('log').scrollHeight}
-    else if(m.type==='reply'){if(!cur)cur=add('bot',BOT_LABEL,'');var msgText=m.text;var ifaceBlocks=parseIfaceWindows(msgText);ifaceBlocks.forEach(function(block){createInterfaceWindow(block)});var stripPattern=String.fromCharCode(96)+String.fromCharCode(96)+String.fromCharCode(96)+'iface-window\\r?\\n[\\s\\S]*?\\r?\\n'+String.fromCharCode(96)+String.fromCharCode(96)+String.fromCharCode(96);msgText=msgText.replace(new RegExp(stripPattern,'g'),'').trim();cur.textContent=msgText;var w=cur.whoEl,secs=stopGen();setMeta(w,secs,null);cur=null;curStarted=false;setStatus('connected');
+    else if(m.type==='reply'){if(!cur)cur=add('bot',BOT_LABEL,'');var msgText=m.text;var ifaceBlocks=parseIfaceWindows(msgText);ifaceBlocks.forEach(function(block){createInterfaceWindow(block)});var stripPattern=String.fromCharCode(96)+String.fromCharCode(96)+String.fromCharCode(96)+'iface-window\\\\r?\\\\n[\\\\s\\\\S]*?\\\\r?\\\\n'+String.fromCharCode(96)+String.fromCharCode(96)+String.fromCharCode(96);msgText=msgText.replace(new RegExp(stripPattern,'g'),'').trim();cur.textContent=msgText;var w=cur.whoEl,secs=stopGen();setMeta(w,secs,null);cur=null;curStarted=false;setStatus('connected');
       fetch('/api/status',{headers:hdrs()}).then(function(r){return r.ok?r.json():null}).then(function(d){if(!d)return;renderModels(d);if(d.last&&w){w.dataset.vid=d.last.model||'';setMeta(w,secs,d.last.total,viaLabel(d.last.model))}if(d.last)maybeStick(d.last.model)}).catch(function(){})}
     else if(m.type==='status'){setStatus(m.text)}};
 }
