@@ -1224,6 +1224,41 @@ loadWindowState();
 if(!WINDOWS['main'])createWindow('main','Zamolxis · Main');
 applyWindowZ();
 renderTaskbar();
+/* ---- Phase E: Interface window creation ---- */
+function parseIfaceWindows(msgText){
+  var blocks=[];
+  var pattern=String.fromCharCode(96)+String.fromCharCode(96)+String.fromCharCode(96)+'iface-window\\r?\\n([\\s\\S]*?)\\r?\\n'+String.fromCharCode(96)+String.fromCharCode(96)+String.fromCharCode(96);
+  var re=new RegExp(pattern,'g'),m;
+  while((m=re.exec(msgText))!==null){
+    try{var data=JSON.parse(m[1]);blocks.push(data)}
+    catch(e){console.warn('Failed to parse iface-window block:',e)}}
+  return blocks}
+function createInterfaceWindow(ifaceData){
+  var wid=ifaceData.wid||'iface_'+(Date.now()+'_'+Math.random().toString(36).substr(2,9));
+  if(WINDOWS[wid])return wid;
+  var type=ifaceData.type,title=ifaceData.title||'Untitled',content=ifaceData.content||'';
+  var html='';
+  if(type==='image'){html='<img src="data:image/png;base64,'+esc(content)+'" style="width:100%;height:100%;object-fit:contain;background:#1a1a1a">'}
+  else if(type==='graph'){html='<div style="width:100%;height:100%;overflow:auto;background:#1a1a1a;padding:10px">'+content+'</div>'}
+  else if(type==='video'){html='<video width="100%" height="100%" controls style="background:#000"><source src="'+esc(content)+'" type="video/mp4"></video>'}
+  else{html='<div style="padding:10px;color:var(--mut)">Unknown type: '+esc(type)+'</div>'}
+  var w={wid:wid,title:title,minimized:false,maximized:false,x:100+Math.random()*40,y:80+Math.random()*40,width:640,height:420,z:++MAX_Z};
+  WINDOWS[wid]=w;
+  var win=document.createElement('div');win.id='window-'+wid;win.className='window';win.dataset.wid=wid;win.style.zIndex=w.z;win.style.left=w.x+'px';win.style.top=w.y+'px';win.style.width=w.width+'px';win.style.height=w.height+'px';
+  win.innerHTML='<div class="window-titlebar"><span class="window-title">'+esc(title)+'</span><div class="window-buttons"><button class="window-btn minimize" title="Minimize">_</button><button class="window-btn maximize" title="Maximize">□</button><button class="window-btn close" title="Close">✕</button></div></div><div class="window-content" style="flex:1;overflow:auto">'+html+'</div>';
+  var container=el('windows-container');if(container)container.appendChild(win);
+  attachWindowHandlers(wid);
+  focusWindow(wid);
+  saveWindowState();
+  renderTaskbar();
+  return wid}
+function attachWindowHandlers(wid){
+  var win=el('window-'+wid),w=WINDOWS[wid];if(!win||!w)return;
+  var minBtn=win.querySelector('.window-btn.minimize'),maxBtn=win.querySelector('.window-btn.maximize'),closeBtn=win.querySelector('.window-btn.close');
+  if(minBtn)minBtn.onclick=function(){minimizeWindow(wid);return false};
+  if(maxBtn)maxBtn.onclick=function(){maximizeWindow(wid);return false};
+  if(closeBtn)closeBtn.onclick=function(){closeWindow(wid);return false};
+  var tb=win.querySelector('.window-titlebar');if(tb)tb.addEventListener('mousedown',function(ev){if(ev.target.classList.contains('window-btn'))return;dragState.dragging=true;dragState.wid=wid;dragState.startX=ev.clientX;dragState.startY=ev.clientY;dragState.startPosX=w.x;dragState.startPosY=w.y;document.body.style.userSelect='none'})}
 /* ---- shared status helpers (masked keys, status dots, active-provider rail, installer) ---- */
 var KEYMASK='************';
 var C_OK='#7dd08a',C_BAD='#e06a5f',C_WARN='#e0a55f',C_OFF='#5a5a5a';
@@ -1422,7 +1457,7 @@ function openWs(){
   sock.onclose=function(){if(myGen!==gen)return;setStatus('disconnected - retrying');setTimeout(function(){if(myGen===gen)openWs()},2000)};
   sock.onmessage=function(ev){if(myGen!==gen)return;var m=JSON.parse(ev.data);
     if(m.type==='chunk'){if(!cur)cur=add('bot',BOT_LABEL,'');if(!curStarted){cur.textContent='';curStarted=true}cur.textContent+=m.text;el('log').scrollTop=el('log').scrollHeight}
-    else if(m.type==='reply'){if(!cur)cur=add('bot',BOT_LABEL,'');cur.textContent=m.text;var w=cur.whoEl,secs=stopGen();setMeta(w,secs,null);cur=null;curStarted=false;setStatus('connected');
+    else if(m.type==='reply'){if(!cur)cur=add('bot',BOT_LABEL,'');var msgText=m.text;var ifaceBlocks=parseIfaceWindows(msgText);ifaceBlocks.forEach(function(block){createInterfaceWindow(block)});var stripPattern=String.fromCharCode(96)+String.fromCharCode(96)+String.fromCharCode(96)+'iface-window\\r?\\n[\\s\\S]*?\\r?\\n'+String.fromCharCode(96)+String.fromCharCode(96)+String.fromCharCode(96);msgText=msgText.replace(new RegExp(stripPattern,'g'),'').trim();cur.textContent=msgText;var w=cur.whoEl,secs=stopGen();setMeta(w,secs,null);cur=null;curStarted=false;setStatus('connected');
       fetch('/api/status',{headers:hdrs()}).then(function(r){return r.ok?r.json():null}).then(function(d){if(!d)return;renderModels(d);if(d.last&&w){w.dataset.vid=d.last.model||'';setMeta(w,secs,d.last.total,viaLabel(d.last.model))}if(d.last)maybeStick(d.last.model)}).catch(function(){})}
     else if(m.type==='status'){setStatus(m.text)}};
 }
