@@ -1258,7 +1258,7 @@ function attachWindowHandlers(wid){
   if(minBtn)minBtn.onclick=function(){minimizeWindow(wid);return false};
   if(maxBtn)maxBtn.onclick=function(){maximizeWindow(wid);return false};
   if(closeBtn)closeBtn.onclick=function(){closeWindow(wid);return false};
-  var tb=win.querySelector('.window-titlebar');if(tb)tb.addEventListener('mousedown',function(ev){if(ev.target.classList.contains('window-btn'))return;dragState.dragging=true;dragState.wid=wid;dragState.startX=ev.clientX;dragState.startY=ev.clientY;dragState.startPosX=w.x;dragState.startPosY=w.y;document.body.style.userSelect='none'})}
+  var tb=win.querySelector('.window-titlebar');if(tb){tb.addEventListener('mousedown',function(ev){if(ev.target.classList.contains('window-btn'))return;dragState.dragging=true;dragState.wid=wid;dragState.startX=ev.clientX;dragState.startY=ev.clientY;dragState.startPosX=w.x;dragState.startPosY=w.y;document.body.style.userSelect='none'});tb.addEventListener('dblclick',function(ev){if(ev.target.classList.contains('window-btn'))return;maximizeWindow(wid);return false})}}
 /* ---- shared status helpers (masked keys, status dots, active-provider rail, installer) ---- */
 var KEYMASK='************';
 var C_OK='#7dd08a',C_BAD='#e06a5f',C_WARN='#e0a55f',C_OFF='#5a5a5a';
