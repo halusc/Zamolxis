@@ -79,14 +79,17 @@ body {
 .win-controls { display: flex; height: 100%; }
 .win-controls button {
   width: 46px; height: 100%; border: 0; background: transparent; cursor: default;
-  display: grid; place-items: center; font-family: "Segoe Fluent Icons","Segoe MDL2 Assets", var(--font); font-size: 10px; color: #1b1b1b;
+  display: grid; place-items: center; color: #1b1b1b;
 }
 .win-controls button:hover { background: rgba(0,0,0,.08); }
 .win-controls button.close:hover { background: #c42b1c; color: #fff; }
-.win-controls button .g { font-size: 13px; line-height: 1; }
-.win-controls button.min .g::before { content: "\2212"; }
-.win-controls button.max .g::before { content: "\25A1"; }
-.win-controls button.close .g::before { content: "\2715"; }
+/* CSS-drawn window-control glyphs — font-independent, crisp, single, dark-mode aware via currentColor */
+.win-controls button .g { position: relative; width: 11px; height: 11px; display: block; }
+.win-controls button.min .g::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: currentColor; }
+.win-controls button.max .g::before { content: ""; position: absolute; inset: 1px; border: 1px solid currentColor; }
+.win-controls button.close .g::before, .win-controls button.close .g::after { content: ""; position: absolute; left: 50%; top: 0; width: 1px; height: 100%; margin-left: -0.5px; background: currentColor; }
+.win-controls button.close .g::before { transform: rotate(45deg); }
+.win-controls button.close .g::after { transform: rotate(-45deg); }
 
 .win-body { flex: 1 1 auto; overflow: auto; background: #fff; position: relative; }
 
