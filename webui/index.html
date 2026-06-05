@@ -13,6 +13,18 @@
     <div id="desktop-icons"></div>
   </div>
 
+  <!-- Top bar (macOS menu bar / Ubuntu top bar; hidden on Windows) -->
+  <div id="topbar">
+    <div id="topbar-left">
+      <span id="tb-brand" aria-hidden="true">◆</span>
+      <span id="tb-appname">Desktop</span>
+    </div>
+    <div id="topbar-right">
+      <span id="tray-status-top" class="tray-dot" title="Backend status">●</span>
+      <span class="clock-time">--:--</span>
+    </div>
+  </div>
+
   <!-- Window layer -->
   <div id="windows"></div>
 
@@ -33,7 +45,7 @@
     </div>
     <div id="taskbar-tray">
       <div id="tray-status" title="Backend status">●</div>
-      <div id="clock"><div id="clock-time">--:--</div><div id="clock-date"></div></div>
+      <div id="clock"><div id="clock-time" class="clock-time">--:--</div><div id="clock-date" class="clock-date"></div></div>
     </div>
   </div>
 

@@ -53,6 +53,7 @@
     w.root.classList.add('focused');
     w.root.style.zIndex = ++zTop;
     w.minimized = false; w.root.classList.remove('minimized');
+    var nm = document.getElementById('tb-appname'); if (nm) nm.textContent = w._appTitle || w.titleEl.textContent || 'Desktop';
     syncTaskbar();
   }
 
@@ -106,8 +107,8 @@
     } else {
       w.prev = { l: w.root.style.left, t: w.root.style.top, w: w.root.style.width, h: w.root.style.height };
       w.root.classList.add('maximized');
-      var tb = document.body.dataset.os === 'ubuntu' ? 32 : 0;
-      var bb = document.body.dataset.os === 'win' ? 48 : (document.body.dataset.os === 'mac' ? 80 : 0);
+      var tb = document.body.dataset.os === 'ubuntu' ? 32 : (document.body.dataset.os === 'mac' ? 26 : 0);
+      var bb = document.body.dataset.os === 'win' ? 48 : (document.body.dataset.os === 'mac' ? 88 : 0);
       w.root.style.left = '0px'; w.root.style.top = tb + 'px';
       w.root.style.width = window.innerWidth + 'px';
       w.root.style.height = (window.innerHeight - tb - bb) + 'px';
@@ -653,11 +654,14 @@
   function tickClock() {
     var d = new Date();
     var hh = d.getHours(), mm = d.getMinutes();
-    $('#clock-time').textContent = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
-    $('#clock-date').textContent = d.toLocaleDateString();
+    var tt = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm, dd = d.toLocaleDateString();
+    Array.prototype.forEach.call(document.querySelectorAll('.clock-time'), function (e) { e.textContent = tt; });
+    Array.prototype.forEach.call(document.querySelectorAll('.clock-date'), function (e) { e.textContent = dd; });
   }
   function pollStatus() {
-    api('/api/status').then(function () { var t = $('#tray-status'); t.classList.add('ok'); t.title = 'Backend connected'; }).catch(function () { $('#tray-status').classList.remove('ok'); });
+    api('/api/status').then(function () {
+      ['#tray-status', '#tray-status-top'].forEach(function (s) { var t = $(s); if (t) { t.classList.add('ok'); t.title = 'Backend connected'; } });
+    }).catch(function () { ['#tray-status', '#tray-status-top'].forEach(function (s) { var t = $(s); if (t) t.classList.remove('ok'); }); });
   }
 
   $('#start-btn').addEventListener('click', function (e) { e.stopPropagation(); toggleStart(); });
