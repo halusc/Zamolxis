@@ -288,3 +288,37 @@ body[data-os="ubuntu"] .tb-app.active::after, body[data-os="ubuntu"] .tb-app.run
 /* offsets: below the top bar, right of the dock; centered launcher overlay */
 body[data-os="ubuntu"] #desktop-icons { top: 36px; left: 74px; }
 body[data-os="ubuntu"] #startmenu { bottom: auto; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+
+/* ============================================================
+   Dark mode — single override layer keyed on body[data-mode="dark"].
+   Applies across all three OS themes (accent stays per-OS).
+   ============================================================ */
+body[data-mode="dark"] { color: #eaeaea; }
+body[data-mode="dark"] .window { background: #202020; border-color: rgba(255,255,255,.14); }
+body[data-mode="dark"] .win-body { background: #2b2b2b; }
+body[data-mode="dark"] .titlebar { background: rgba(42,42,42,.85); color: #eaeaea; border-bottom-color: rgba(255,255,255,.08); }
+body[data-mode="dark"] .win-controls button { color: #eaeaea; }
+body[data-mode="dark"] .win-controls button:hover { background: rgba(255,255,255,.12); }
+body[data-mode="dark"] .chat { background: #2b2b2b; }
+body[data-mode="dark"] .msg.bot { background: #3a3a3a; color: #eaeaea; }
+body[data-mode="dark"] #status, body[data-mode="dark"] .chat-bar, body[data-mode="dark"] .chat-input { background: #242424; color: #bdbdbd; border-color: rgba(255,255,255,.08); }
+body[data-mode="dark"] .chat-input textarea, body[data-mode="dark"] .inp, body[data-mode="dark"] select.inp, body[data-mode="dark"] textarea.inp { background: #1e1e1e; color: #eaeaea; border-color: rgba(255,255,255,.16); }
+body[data-mode="dark"] .agent-head, body[data-mode="dark"] .skill { border-color: rgba(255,255,255,.08); }
+body[data-mode="dark"] .prov { border-color: rgba(255,255,255,.12); }
+body[data-mode="dark"] .set-nav { background: #242424; border-right-color: rgba(255,255,255,.08); }
+body[data-mode="dark"] .set-nav button { color: #ddd; }
+body[data-mode="dark"] .set-nav button:hover { background: rgba(255,255,255,.08); }
+body[data-mode="dark"] .seg button, body[data-mode="dark"] .btn.ghost { background: #3a3a3a; color: #eaeaea; border-color: rgba(255,255,255,.16); }
+body[data-mode="dark"] .hint, body[data-mode="dark"] .empty, body[data-mode="dark"] .sdesc, body[data-mode="dark"] .a-sub { color: #9a9a9a; }
+body[data-mode="dark"] .switch { background: #555; }
+body[data-mode="dark"] #taskbar { background: rgba(28,28,28,.82); border-top-color: rgba(255,255,255,.08); }
+body[data-mode="dark"] #taskbar button, body[data-mode="dark"] .tb-app, body[data-mode="dark"] #clock { color: #eaeaea; }
+body[data-mode="dark"] #taskbar button:hover, body[data-mode="dark"] .tb-app:hover { background: rgba(255,255,255,.12); }
+body[data-mode="dark"] #topbar { background: rgba(28,28,28,.92); color: #eaeaea; border-bottom-color: rgba(255,255,255,.1); }
+body[data-mode="dark"] #startmenu { background: rgba(30,30,30,.95); border-color: rgba(255,255,255,.1); color: #eaeaea; }
+body[data-mode="dark"] #startmenu-search input { background: #1e1e1e; color: #eaeaea; border-color: rgba(255,255,255,.16); }
+body[data-mode="dark"] #startmenu-label { color: #bbb; }
+body[data-mode="dark"] .sm-app:hover, body[data-mode="dark"] .desk-icon:hover { background: rgba(255,255,255,.12); }
+body[data-mode="dark"] .skill { border-bottom-color: rgba(255,255,255,.08); }
+/* Windows light bars stay bright unless dark mode; macOS keeps its own dark bars below */
+body[data-mode="dark"][data-os="mac"] .titlebar { background: rgba(40,40,40,.8); }

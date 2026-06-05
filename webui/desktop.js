@@ -39,6 +39,12 @@
   }
   function setTheme(choice) { localStorage.setItem('zx_os', choice); applyTheme(); rerenderSettings(); }
 
+  // light/dark mode (auto follows the OS via prefers-color-scheme)
+  function modeChoice() { return localStorage.getItem('zx_mode') || 'auto'; }
+  function resolveMode(c) { if (c === 'light') return 'light'; if (c === 'dark') return 'dark'; return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; }
+  function applyMode() { var c = modeChoice(); document.body.dataset.mode = resolveMode(c); return c; }
+  function setMode(c) { localStorage.setItem('zx_mode', c); applyMode(); rerenderSettings(); }
+
   // ============================================================
   // Window Manager
   // ============================================================
@@ -396,7 +402,18 @@
       seg.appendChild(b);
     });
     f.appendChild(seg); pane.appendChild(f);
-    pane.appendChild(el('div', 'hint', 'macOS and Ubuntu have base chrome now; full polish is a later phase.'));
+
+    var mc = modeChoice();
+    var f2 = el('div', 'field');
+    f2.appendChild(el('label', null, 'Appearance mode'));
+    f2.appendChild(el('div', 'hint', 'Auto follows your system light/dark preference (now: ' + resolveMode(mc) + ').'));
+    var seg2 = el('div', 'seg');
+    [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']].forEach(function (o) {
+      var b = el('button', mc === o[0] ? 'active' : null, o[1]);
+      b.addEventListener('click', function () { setMode(o[0]); });
+      seg2.appendChild(b);
+    });
+    f2.appendChild(seg2); pane.appendChild(f2);
   }
 
   function tabEngine(pane) {
@@ -709,6 +726,8 @@
 
   // boot
   applyTheme();
+  applyMode();
+  if (window.matchMedia) { try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { if (modeChoice() === 'auto') applyMode(); }); } catch (e) {} }
   tickClock(); setInterval(tickClock, 10000);
   pollStatus(); setInterval(pollStatus, 15000);
   renderDesktop();
