@@ -309,6 +309,12 @@ export class WebChannel implements Channel {
       res.end(html);
       return;
     }
+    if (url.pathname === '/api/help' && req.method === 'GET') {
+      if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
+      let md = '';
+      try { md = fs.readFileSync(path.join(REPO_ROOT, 'HELP.md'), 'utf8'); } catch { md = '# Help\n\nHELP.md not found.'; }
+      return this.json(res, 200, { md });
+    }
     if (url.pathname === '/api/settings') {
       if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
       if (req.method === 'GET') return this.json(res, 200, this.settings.snapshot());
@@ -1133,6 +1139,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 <div id="viewpanel" class="side"><div class="phead"><h3>View</h3><button id="viewclose" class="winx" title="Close">&#10005;</button></div><div class="pbody" id="viewbody"></div></div>
 <div id="agentmodal" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);align-items:center;justify-content:center"><div style="background:#161108;border:1px solid var(--line);border-radius:12px;padding:18px 18px 16px;width:min(600px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.5)"><h3 style="margin:0 0 12px;color:var(--accent)">New agent</h3><label style="display:block;font-size:12px;color:var(--mut);margin-bottom:3px">Name</label><input id="am_name" placeholder="e.g. mailproc" style="width:100%;box-sizing:border-box;margin-bottom:12px"><label style="display:block;font-size:12px;color:var(--mut);margin-bottom:3px">Instructions &mdash; what it does, and how often if it repeats. Leave blank for an <b>open</b> agent you task each time.</label><textarea id="am_job" rows="9" placeholder="e.g. Every morning at 8, read my gmail and Slack me a 5-bullet digest of anything that needs a reply." style="width:100%;box-sizing:border-box;resize:vertical;margin-bottom:12px"></textarea><label style="display:block;font-size:12px;color:var(--mut);margin-bottom:3px">Runs on</label><select id="am_model" style="margin-bottom:14px"></select><label style="display:block;font-size:12px;color:var(--mut);margin-bottom:3px">On restart</label><select id="am_autostart" style="margin-bottom:14px"><option value="">Use global default</option><option value="resume">Always resume</option><option value="pause">Start paused</option></select><div style="display:flex;gap:8px;justify-content:flex-end"><button id="am_cancel" type="button">Cancel</button><button id="am_create" type="button">Create</button></div></div></div>
 <div id="jobmodal" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);align-items:center;justify-content:center"><div style="background:#161108;border:1px solid var(--line);border-radius:12px;padding:18px;width:min(660px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.5)"><h3 style="margin:0 0 10px;color:var(--accent)">Edit job &mdash; <span id="jm_name"></span></h3><label style="display:block;font-size:12px;color:var(--mut);margin-bottom:3px">Runs on</label><select id="jm_model" style="margin-bottom:10px"></select><div id="jm_why" style="display:none;font-size:12px;color:#e0a55f;margin-bottom:8px"></div><label style="display:block;font-size:12px;color:var(--mut);margin-bottom:3px">Instructions in plain language (incl. how often if it repeats). On save, the smartest model recompiles the plan, skills and schedule &mdash; just like when you create an agent. If your chosen model looks too weak, it will warn you but keep your choice unless you change it.</label><textarea id="jm_job" rows="8" style="width:100%;box-sizing:border-box;resize:vertical;margin-bottom:10px"></textarea><details style="margin-bottom:12px"><summary style="cursor:pointer;font-size:12px;color:var(--mut)">Current compiled plan (read-only)</summary><pre id="jm_spec" style="white-space:pre-wrap;font-size:11px;color:var(--mut);max-height:220px;overflow:auto;background:#0c0a07;border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:6px"></pre></details><div style="display:flex;gap:8px;justify-content:flex-end"><button id="jm_cancel" type="button">Cancel</button><button id="jm_save" type="button">Save &amp; recompile</button></div></div></div>
+<div id="helpmodal" style="display:none;position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.55);align-items:center;justify-content:center"><div style="background:#161108;border:1px solid var(--line);border-radius:12px;width:min(940px,95vw);height:86vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.5)"><div class="phead"><h3>Help</h3><input id="help_q" placeholder="Search help, skills &amp; models..." style="flex:2;max-width:440px;margin:0 8px"><button id="helpclose" class="winx" title="Close">&#10005;</button></div><div class="pbody" id="helpbody" style="flex:1;overflow:auto">loading...</div></div></div>
 <script>
 function uuid(){return crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()}
 /* ---- shared status helpers (masked keys, status dots, active-provider rail, installer) ---- */
@@ -1659,7 +1666,39 @@ function renderLocal(d){var v=el('localview');if(!v)return;var h='';
 function startLocalPoll(){if(LOCALPOLL)return;LOCALPOLL=setInterval(function(){if(!el('localpanel').classList.contains('open')){stopLocalPoll();return}loadLocal()},1500)}
 function stopLocalPoll(){if(LOCALPOLL){clearInterval(LOCALPOLL);LOCALPOLL=null}}
 el('localbtn').onclick=function(){if(closePanels()===false)return;closeTools();loadLocal();el('localpanel').classList.add('open');pushAside(el('localpanel'))};
-if(el('helpbtn'))el('helpbtn').onclick=function(){closeTools();window.open('/help','_blank')};
+/* ---- Help: searchable modal over help text + skills + models ---- */
+var HELP_MD='',HELP_SKILLS=[],HELP_MODELS=[];
+function inlineMd(s){return s.replace(/\`([^\`]+)\`/g,'<code>$1</code>').replace(/\\*\\*([^*]+)\\*\\*/g,'<b>$1</b>')}
+function mdLite(md){return String(md||'').split('\\n').map(function(l){l=esc(l);
+  if(/^### /.test(l))return '<h4 style="color:var(--accent);margin:12px 0 4px">'+inlineMd(l.slice(4))+'</h4>';
+  if(/^## /.test(l))return '<h3 style="color:var(--accent);margin:16px 0 6px">'+inlineMd(l.slice(3))+'</h3>';
+  if(/^# /.test(l))return '<h2 style="color:var(--accent);margin:0 0 8px">'+inlineMd(l.slice(2))+'</h2>';
+  if(/^[-*] /.test(l))return '<div style="margin:2px 0 2px 12px">\\u2022 '+inlineMd(l.slice(2))+'</div>';
+  if(!l.trim())return '<div style="height:6px"></div>';
+  return '<div>'+inlineMd(l)+'</div>'}).join('')}
+function loadHelp(){el('helpbody').innerHTML='loading...';
+  var g=function(u){return fetch(u,{headers:hdrs()}).then(function(r){return r.ok?r.json():null}).catch(function(){return null})};
+  Promise.all([g('/api/help'),g('/api/skills'),g('/api/providers'),g('/api/local')]).then(function(res){
+    HELP_MD=(res[0]&&res[0].md)||'';HELP_SKILLS=res[1]||[];var prov=res[2]||{},loc=res[3]||{};HELP_MODELS=[];
+    if(prov.localModel)HELP_MODELS.push({name:String(prov.localModel),tier:'local (on-device)',note:'Ollama'});
+    (prov.providers||[]).forEach(function(p){HELP_MODELS.push({name:p.model||p.id,tier:(p.kind||'')+' provider'+(p.configured?'':' \\u2014 not configured'),note:p.note||p.label||''})});
+    if(prov.claude)HELP_MODELS.push({name:(prov.claude.model||'opus'),tier:'subscription',note:'Claude Code, flat-rate'});
+    (loc.catalog||[]).forEach(function(c){HELP_MODELS.push({name:c.id,tier:'catalog'+(c.installed?' (installed)':''),note:c.desc||''})});
+    renderHelp(el('help_q')?el('help_q').value:'')})}
+function renderHelp(q){var b=el('helpbody');if(!b)return;q=(q||'').trim().toLowerCase();
+  if(!q){b.innerHTML=mdLite(HELP_MD)+'<hr style="border:none;border-top:1px solid var(--line);margin:18px 0"><div style="color:var(--mut);font-size:12px">Tip: the search box also matches your '+HELP_SKILLS.length+' skills and '+HELP_MODELS.length+' models.</div>';return}
+  var h='';
+  var secs=HELP_MD.split(/\\n(?=## )/).filter(function(s){return s.toLowerCase().indexOf(q)>=0});
+  if(secs.length)h+='<h3 style="color:var(--accent)">Help</h3>'+secs.map(function(s){return '<div style="margin-bottom:8px">'+mdLite(s)+'</div>'}).join('');
+  var sk=HELP_SKILLS.filter(function(s){return ((s.name||'')+' '+(s.description||'')+' '+(s.category||'')).toLowerCase().indexOf(q)>=0});
+  if(sk.length)h+='<h3 style="color:var(--accent);margin-top:14px">Skills ('+sk.length+')</h3>'+sk.slice(0,60).map(function(s){return '<div style="border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:6px"><b>'+esc(s.name)+'</b>'+(s.source==='external'?' <span style="color:var(--mut);font-size:10px">external</span>':'')+'<div style="font-size:12px;color:var(--mut)">'+esc(s.description||'')+'</div></div>'}).join('');
+  var md=HELP_MODELS.filter(function(m){return ((m.name||'')+' '+(m.tier||'')+' '+(m.note||'')).toLowerCase().indexOf(q)>=0});
+  if(md.length)h+='<h3 style="color:var(--accent);margin-top:14px">Models ('+md.length+')</h3>'+md.slice(0,60).map(function(m){return '<div style="border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:6px"><b>'+esc(m.name)+'</b> <span style="color:var(--mut);font-size:10px">'+esc(m.tier)+'</span><div style="font-size:12px;color:var(--mut)">'+esc(m.note||'')+'</div></div>'}).join('');
+  b.innerHTML=h||'<div style="color:var(--mut)">No matches for \\u201c'+esc(q)+'\\u201d.</div>'}
+if(el('helpbtn'))el('helpbtn').onclick=function(){closeTools();if(el('help_q'))el('help_q').value='';el('helpmodal').style.display='flex';loadHelp();setTimeout(function(){if(el('help_q'))el('help_q').focus()},30)};
+if(el('helpclose'))el('helpclose').onclick=function(){el('helpmodal').style.display='none'};
+if(el('helpmodal'))el('helpmodal').onclick=function(e){if(e.target===el('helpmodal'))el('helpmodal').style.display='none'};
+if(el('help_q'))el('help_q').addEventListener('input',function(){renderHelp(el('help_q').value)});
 /* ---- View menu: show/hide the left-rail sections ---- */
 var RAILVIS={models:true,agents:true,chats:true};
 try{var rv0=JSON.parse(localStorage.zx_railvis||'null');if(rv0){RAILVIS.models=rv0.models!==false;RAILVIS.agents=rv0.agents!==false;RAILVIS.chats=rv0.chats!==false}}catch(e){}
