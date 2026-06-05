@@ -396,12 +396,13 @@
     f.appendChild(el('label', null, 'Desktop style'));
     f.appendChild(el('div', 'hint', 'Auto follows your OS (detected: ' + osName(t.effective) + '). Override below.'));
     var seg = el('div', 'seg');
-    [['auto', 'Auto'], ['win', 'Windows 11'], ['mac', 'macOS'], ['ubuntu', 'Ubuntu']].forEach(function (o) {
+    [['auto', 'Auto'], ['win', 'Windows 11'], ['mac', 'macOS'], ['ubuntu', 'Ubuntu'], ['classic', 'Classic']].forEach(function (o) {
       var b = el('button', t.choice === o[0] ? 'active' : null, o[1]);
-      b.addEventListener('click', function () { setTheme(o[0]); });
+      b.addEventListener('click', function () { if (o[0] === 'classic') { location.href = '/classic'; } else { setTheme(o[0]); } });
       seg.appendChild(b);
     });
     f.appendChild(seg); pane.appendChild(f);
+    pane.appendChild(el('div', 'hint', '"Classic" opens the previous stable Zamolxis interface (the last stable version), kept as a fourth option.'));
 
     var mc = modeChoice();
     var f2 = el('div', 'field');
@@ -683,14 +684,50 @@
   // ============================================================
   var deskIcons = $('#desktop-icons');
   var selectedIcon = null;
+  function loadIconPos() { try { return JSON.parse(localStorage.getItem('zx_icons') || '{}'); } catch (e) { return {}; } }
+  function saveIconPos(p) { try { localStorage.setItem('zx_icons', JSON.stringify(p)); } catch (e) {} }
+
+  function wireIcon(ic, a) {
+    function select() { if (selectedIcon && selectedIcon !== ic) selectedIcon.classList.remove('selected'); ic.classList.add('selected'); selectedIcon = ic; }
+    ic.addEventListener('mousedown', function (e) {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      var sx = e.clientX, sy = e.clientY;
+      var sl = parseInt(ic.style.left, 10) || 0, st = parseInt(ic.style.top, 10) || 0;
+      var moved = false;
+      function mv(ev) {
+        var dx = ev.clientX - sx, dy = ev.clientY - sy;
+        if (!moved && Math.abs(dx) + Math.abs(dy) > 4) { moved = true; ic.classList.add('dragging'); select(); }
+        if (moved) { ic.style.left = Math.max(0, sl + dx) + 'px'; ic.style.top = Math.max(0, st + dy) + 'px'; }
+      }
+      function up() {
+        document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up);
+        if (moved) {
+          ic.classList.remove('dragging');
+          var pos = loadIconPos(); pos[a.id] = { x: parseInt(ic.style.left, 10), y: parseInt(ic.style.top, 10) }; saveIconPos(pos);
+          ic._moved = true; setTimeout(function () { ic._moved = false; }, 0);
+        }
+      }
+      document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+    });
+    ic.addEventListener('click', function (e) { e.stopPropagation(); if (ic._moved) return; select(); });
+    ic.addEventListener('dblclick', function () { launchApp(a.id); });
+  }
+
   function renderDesktop() {
     deskIcons.innerHTML = '';
-    appList().forEach(function (a) {
+    var pos = loadIconPos();
+    var os = document.body.dataset.os;
+    var startX = os === 'ubuntu' ? 78 : 16;
+    var startY = (os === 'mac' || os === 'ubuntu') ? 40 : 16;
+    appList().forEach(function (a, i) {
       var ic = el('div', 'desk-icon');
       ic.appendChild(el('div', 'ico', a.iconSvg));
       ic.appendChild(el('div', 'label', a.name));
-      ic.addEventListener('click', function (e) { e.stopPropagation(); if (selectedIcon) selectedIcon.classList.remove('selected'); ic.classList.add('selected'); selectedIcon = ic; });
-      ic.addEventListener('dblclick', function () { launchApp(a.id); });
+      var p = pos[a.id];
+      if (p) { ic.style.left = p.x + 'px'; ic.style.top = p.y + 'px'; }
+      else { ic.style.left = startX + 'px'; ic.style.top = (startY + i * 96) + 'px'; }
+      wireIcon(ic, a);
       deskIcons.appendChild(ic);
     });
     if (!startMenu.classList.contains('hidden')) renderStart($('#start-search-input').value);

@@ -313,7 +313,9 @@ export class WebChannel implements Channel {
     if (req.method === 'GET' && url.pathname === '/classic') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       const name = effectiveName(this.config.agentName).replace(/[<>'"`\\]/g, '');
-      res.end(PAGE.replace(/__AGENT_NAME__/g, name));
+      // Injected at serve-time only (the stored stable PAGE is left untouched): a way back to the desktop.
+      const backLink = '<a href="/" title="Switch to the new desktop" style="position:fixed;right:12px;bottom:12px;z-index:2147483647;background:#0067c0;color:#fff;font:600 12px system-ui,sans-serif;padding:7px 12px;border-radius:8px;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.35)">New desktop &#8599;</a>';
+      res.end(PAGE.replace(/__AGENT_NAME__/g, name) + backLink);
       return;
     }
     // Static assets for the new desktop UI.

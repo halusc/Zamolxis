@@ -31,17 +31,15 @@ body {
     radial-gradient(900px 700px at 20% 80%, #1f4fa3 0%, rgba(31,79,163,0) 55%),
     linear-gradient(135deg, #0a3a8c 0%, #123a73 45%, #0c2a5a 100%);
 }
-#desktop-icons {
-  position: absolute; top: 12px; left: 12px;
-  display: flex; flex-direction: column; flex-wrap: wrap;
-  gap: 6px; max-height: calc(100vh - var(--tb-h) - 24px);
-}
+#desktop-icons { position: absolute; inset: 0; pointer-events: none; }
 .desk-icon {
+  position: absolute; pointer-events: auto;
   width: 88px; padding: 10px 6px; border-radius: 6px;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   color: #fff; text-align: center; cursor: default;
   text-shadow: 0 1px 3px rgba(0,0,0,.6);
 }
+.desk-icon.dragging { opacity: .85; }
 .desk-icon:hover { background: rgba(255,255,255,.12); }
 .desk-icon.selected { background: rgba(90,160,255,.35); outline: 1px solid rgba(255,255,255,.4); }
 .desk-icon .ico { width: 40px; height: 40px; display: grid; place-items: center; }
@@ -265,7 +263,6 @@ body[data-os="mac"] .win-controls button .g { display: none; }
 /* macOS top menu bar + layout offsets */
 body[data-os="mac"] #topbar { display: flex; background: rgba(250,250,250,.6); backdrop-filter: blur(30px) saturate(1.6); color: #1b1b1b; border-bottom: 1px solid rgba(0,0,0,.1); }
 body[data-os="mac"] #windows { top: 26px; }
-body[data-os="mac"] #desktop-icons { top: 34px; }
 
 /* ============================================================
    Ubuntu / GNOME chrome (refined later; sensible base now)
@@ -288,8 +285,7 @@ body[data-os="ubuntu"] #taskbar button, body[data-os="ubuntu"] .tb-app { color: 
 body[data-os="ubuntu"] #taskbar button:hover, body[data-os="ubuntu"] .tb-app:hover { background: rgba(255,255,255,.15); }
 body[data-os="ubuntu"] .tb-app.active::after, body[data-os="ubuntu"] .tb-app.running::after { left: 2px; top: 50%; bottom: auto; transform: translateY(-50%); width: 3px; height: 18px; }
 
-/* offsets: below the top bar, right of the dock; centered launcher overlay */
-body[data-os="ubuntu"] #desktop-icons { top: 36px; left: 74px; }
+/* centered launcher overlay */
 body[data-os="ubuntu"] #startmenu { bottom: auto; top: 50%; left: 50%; transform: translate(-50%,-50%); }
 
 /* ============================================================
