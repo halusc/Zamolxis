@@ -317,33 +317,174 @@
     setTimeout(function () { ta.focus(); }, 50);
   }
 
-  // ---------- App: Settings (OS appearance) ----------
-  var settingsBody = null;
-  function mountSettings(body, win) { settingsBody = body; renderSettings(body); win.cleanup.push(function () { if (settingsBody === body) settingsBody = null; }); }
-  function rerenderSettings() { if (settingsBody) renderSettings(settingsBody); }
-  function renderSettings(body) {
-    body.innerHTML = '';
-    var pad = el('div', 'app-pad');
+  // ---------- App: Settings (tabbed, wired to the real backend) ----------
+  function osName(o) { return o === 'mac' ? 'macOS' : (o === 'ubuntu' ? 'Ubuntu' : 'Windows'); }
+  function postSettings(patch) { return api('/api/settings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(patch) }); }
+  function restartZam(btn, status) { if (btn) btn.disabled = true; if (status) status.textContent = 'Restarting...'; api('/api/restart', { method: 'POST' }).then(function () { setTimeout(function () { location.reload(); }, 4500); }).catch(function () { if (btn) btn.disabled = false; if (status) status.textContent = 'Failed.'; }); }
+  function fld(labelTxt, node, hint) { var f = el('div', 'field'); f.appendChild(el('label', null, labelTxt)); if (hint) f.appendChild(el('div', 'hint', hint)); f.appendChild(node); return f; }
+  function inp(val) { var i = el('input', 'inp'); i.style.width = '100%'; i.value = (val == null ? '' : val); return i; }
+
+  var settingsRender = null;
+  function mountSettings(body, win) {
+    body.style.padding = '0';
+    var state = { tab: 'appearance' };
+    var wrap = el('div', 'settings-wrap');
+    var nav = el('div', 'set-nav');
+    var pane = el('div', 'set-pane');
+    wrap.appendChild(nav); wrap.appendChild(pane); body.appendChild(wrap);
+    var tabs = [['appearance', 'Appearance'], ['engine', 'Engine'], ['providers', 'Providers'], ['skills', 'Skills'], ['system', 'System']];
+    function renderNav() { nav.innerHTML = ''; tabs.forEach(function (t) { var b = el('button', state.tab === t[0] ? 'active' : null, t[1]); b.addEventListener('click', function () { state.tab = t[0]; renderNav(); renderTab(); }); nav.appendChild(b); }); }
+    function renderTab() {
+      pane.innerHTML = '';
+      if (state.tab === 'appearance') tabAppearance(pane);
+      else if (state.tab === 'engine') tabEngine(pane);
+      else if (state.tab === 'providers') tabProviders(pane);
+      else if (state.tab === 'skills') tabSkills(pane);
+      else tabSystem(pane);
+    }
+    settingsRender = function () { renderTab(); };
+    win.cleanup.push(function () { settingsRender = null; });
+    renderNav(); renderTab();
+  }
+  function rerenderSettings() { if (settingsRender) settingsRender(); }
+
+  function tabAppearance(pane) {
     var t = applyTheme();
     var f = el('div', 'field');
-    f.appendChild(el('label', null, 'Appearance — desktop style'));
-    f.appendChild(el('div', 'hint', 'Auto follows your operating system (detected: <b>' + osName(t.effective) + '</b>). You can override it.'));
+    f.appendChild(el('label', null, 'Desktop style'));
+    f.appendChild(el('div', 'hint', 'Auto follows your OS (detected: ' + osName(t.effective) + '). Override below.'));
     var seg = el('div', 'seg');
     [['auto', 'Auto'], ['win', 'Windows 11'], ['mac', 'macOS'], ['ubuntu', 'Ubuntu']].forEach(function (o) {
       var b = el('button', t.choice === o[0] ? 'active' : null, o[1]);
       b.addEventListener('click', function () { setTheme(o[0]); });
       seg.appendChild(b);
     });
-    f.appendChild(seg);
-    pad.appendChild(f);
-
-    var f2 = el('div', 'field');
-    f2.appendChild(el('label', null, 'About'));
-    f2.appendChild(el('div', 'hint', AGENT_NAME + ' desktop. Apps are agents; ' + AGENT_NAME + ' is the default app and hosts the main chat. More settings (providers, models, skills, language) move here next.'));
-    pad.appendChild(f2);
-    body.appendChild(pad);
+    f.appendChild(seg); pane.appendChild(f);
+    pane.appendChild(el('div', 'hint', 'macOS and Ubuntu have base chrome now; full polish is a later phase.'));
   }
-  function osName(o) { return o === 'mac' ? 'macOS' : (o === 'ubuntu' ? 'Ubuntu' : 'Windows'); }
+
+  function tabEngine(pane) {
+    pane.appendChild(el('div', 'hint', 'Loading...'));
+    api('/api/settings').then(function (s) {
+      pane.innerHTML = '';
+      var live = s.live || {};
+      var name = inp(live.agentName);
+      var dl = el('datalist'); dl.id = 'zx-models'; ['claude-opus-4-8', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001', 'opus', 'sonnet', 'haiku'].forEach(function (m) { var o = el('option'); o.value = m; dl.appendChild(o); }); pane.appendChild(dl);
+      var model = inp(live.model); model.setAttribute('list', 'zx-models');
+      var fast = inp(live.fastModel);
+      var perm = el('select', 'inp'); perm.style.width = '100%';
+      ['default', 'acceptEdits', 'bypassPermissions', 'plan', 'dontAsk'].forEach(function (m) { var o = el('option'); o.value = m; o.textContent = m; if (live.permissionMode === m) o.selected = true; perm.appendChild(o); });
+      var turns = inp(live.maxTurns); turns.type = 'number';
+      var conc = inp(live.maxConcurrent); conc.type = 'number';
+      var routing = el('button', 'switch' + (live.localRouting !== 'off' ? ' on' : ''), "<span class='knob'></span>");
+      routing.addEventListener('click', function () { routing.classList.toggle('on'); });
+      var sys = el('textarea', 'inp'); sys.style.cssText = 'width:100%;height:80px'; sys.value = live.systemPromptAppend || '';
+
+      pane.appendChild(fld('Assistant name', name));
+      pane.appendChild(fld('Primary model', model, 'Claude model id or alias.'));
+      pane.appendChild(fld('Fast model', fast));
+      pane.appendChild(fld('Permission mode', perm));
+      var row = el('div', 'row2'); var c1 = el('div'); c1.style.flex = '1'; c1.appendChild(fld('Max turns', turns)); var c2 = el('div'); c2.style.flex = '1'; c2.appendChild(fld('Max concurrent', conc)); row.appendChild(c1); row.appendChild(c2); pane.appendChild(row);
+      var rrow = el('div'); rrow.style.cssText = 'display:flex;align-items:center;gap:8px'; rrow.appendChild(routing); rrow.appendChild(el('span', 'hint', 'Local-model routing (auto / off)')); pane.appendChild(fld('Routing', rrow));
+      pane.appendChild(fld('System prompt append', sys));
+      var status = el('span', 'hint'); var save = el('button', 'btn', 'Save');
+      var sr = el('div', 'save-row'); sr.appendChild(save); sr.appendChild(status); pane.appendChild(sr);
+      save.addEventListener('click', function () {
+        save.disabled = true; status.textContent = 'Saving...';
+        postSettings({ live: { agentName: name.value.trim(), model: model.value.trim(), fastModel: fast.value.trim(), permissionMode: perm.value, maxTurns: Number(turns.value) || undefined, maxConcurrent: Number(conc.value) || undefined, localRouting: routing.classList.contains('on') ? 'auto' : 'off', systemPromptAppend: sys.value } })
+          .then(function (r) { save.disabled = false; status.textContent = 'Saved.' + (r && r.restartRequired ? ' Some changes need a restart (System tab).' : ''); })
+          .catch(function () { save.disabled = false; status.textContent = 'Failed.'; });
+      });
+    }).catch(function () { pane.innerHTML = ''; pane.appendChild(el('div', 'empty', 'Could not load settings.')); });
+  }
+
+  function tabProviders(pane) {
+    pane.appendChild(el('div', 'hint', 'Loading providers...'));
+    api('/api/providers').then(function (d) {
+      pane.innerHTML = '';
+      pane.appendChild(el('div', 'hint', 'Saving a key persists it; it takes effect after a restart (System tab).'));
+      (d.providers || []).forEach(function (p) {
+        var card = el('div', 'prov');
+        var top = el('div', 'top');
+        top.appendChild(el('span', 'name', p.label || p.id));
+        top.appendChild(el('span', 'tag ' + (p.kind === 'paid' ? 'paid' : 'free'), p.kind || 'free'));
+        if (p.configured) top.appendChild(el('span', 'tag ok', 'configured'));
+        card.appendChild(top);
+        card.appendChild(el('div', 'hint', (p.model || '') + (p.note ? (' — ' + p.note) : '') + (typeof p.used === 'number' ? (' · used ' + p.used + (p.freeDaily ? ('/' + p.freeDaily) : '')) : '')));
+        if (p.envKey) {
+          var krow = el('div'); krow.style.cssText = 'display:flex;gap:8px;margin-top:8px';
+          var key = el('input', 'inp'); key.type = 'password'; key.style.flex = '1'; key.placeholder = p.configured ? '•••• set — paste to replace' : 'Paste API key';
+          var sv = el('button', 'btn', 'Save'); var st = el('div', 'hint'); st.style.marginTop = '4px';
+          krow.appendChild(key); krow.appendChild(sv); card.appendChild(krow); card.appendChild(st);
+          sv.addEventListener('click', function () {
+            var v = key.value.trim(); if (!v) { st.textContent = 'Enter a key.'; return; }
+            sv.disabled = true; st.textContent = 'Saving...'; var cred = {}; cred[p.envKey] = v;
+            postSettings({ credentials: cred }).then(function () { sv.disabled = false; key.value = ''; st.textContent = 'Saved — restart to apply.'; }).catch(function () { sv.disabled = false; st.textContent = 'Failed.'; });
+          });
+        }
+        pane.appendChild(card);
+      });
+    }).catch(function () { pane.innerHTML = ''; pane.appendChild(el('div', 'empty', 'Could not load providers.')); });
+  }
+
+  function tabSkills(pane) {
+    pane.appendChild(el('div', 'hint', 'Loading skills...'));
+    api('/api/skills').then(function (arr) {
+      pane.innerHTML = '';
+      var list = Array.isArray(arr) ? arr : [];
+      var search = inp(''); search.placeholder = 'Search ' + list.length + ' skills'; search.style.marginBottom = '10px';
+      pane.appendChild(search);
+      var box = el('div'); pane.appendChild(box);
+      function draw(f) {
+        box.innerHTML = ''; var q = (f || '').toLowerCase();
+        var shown = list.filter(function (s) { return !q || (s.name + ' ' + (s.description || '')).toLowerCase().indexOf(q) !== -1; });
+        if (!shown.length) { box.appendChild(el('div', 'empty', 'No skills match.')); return; }
+        shown.forEach(function (s) {
+          var rowEl = el('div', 'skill');
+          var meta = el('div', 'meta');
+          meta.appendChild(el('div', 'sname', s.name + (s.source === 'external' ? '  ·  external' : '')));
+          meta.appendChild(el('div', 'sdesc', (s.description || '').slice(0, 160)));
+          rowEl.appendChild(meta);
+          if (s.source === 'external') {
+            var imp = el('button', 'btn ghost', 'Import'); imp.style.cssText = 'padding:5px 10px;flex:0 0 auto';
+            imp.addEventListener('click', function () { imp.disabled = true; api('/api/skills', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'import', slug: s.name }) }).then(function () { s.source = 'own'; draw(search.value); }).catch(function () { imp.disabled = false; }); });
+            rowEl.appendChild(imp);
+          } else {
+            var en = s.enabled !== false;
+            var tg = el('button', 'switch' + (en ? ' on' : ''), "<span class='knob'></span>");
+            tg.addEventListener('click', function () {
+              var want = !tg.classList.contains('on'); tg.classList.toggle('on', want);
+              api('/api/skills', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: want ? 'enable' : 'disable', slug: s.name }) }).then(function () { s.enabled = want; }).catch(function () { tg.classList.toggle('on', !want); });
+            });
+            rowEl.appendChild(tg);
+          }
+          box.appendChild(rowEl);
+        });
+      }
+      search.addEventListener('input', function () { draw(this.value); });
+      draw('');
+    }).catch(function () { pane.innerHTML = ''; pane.appendChild(el('div', 'empty', 'Could not load skills.')); });
+  }
+
+  function tabSystem(pane) {
+    pane.appendChild(el('div', 'hint', 'Loading...'));
+    api('/api/status').then(function (s) {
+      pane.innerHTML = '';
+      var v = s.version || {}, m = s.models || {}, u = s.update || {};
+      function kv(k, val) { var r = el('div'); r.style.cssText = 'display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:13px'; r.appendChild(el('span', null, k)); var b = el('span'); b.style.color = '#555'; b.textContent = val; r.appendChild(b); return r; }
+      pane.appendChild(kv('Version', (v.pkg || '?') + ' · build ' + (v.build != null ? v.build : '?') + ' · ' + (v.commit || '')));
+      pane.appendChild(kv('Primary model', m.primary || '?'));
+      pane.appendChild(kv('Fast model', m.fast || '?'));
+      pane.appendChild(kv('Local model', m.local || '(none)'));
+      pane.appendChild(kv('Branch', (u.branch || '?') + (u.behind ? (' · ' + u.behind + ' behind') : ' · up to date')));
+      pane.appendChild(kv('Tokens (session)', String((s.engineTokens && s.engineTokens.session) || 0)));
+      var rb = el('button', 'btn', 'Restart Zamolxis');
+      var cl = el('a', 'btn ghost', 'Open classic UI'); cl.href = '/classic'; cl.target = '_blank'; cl.style.cssText = 'text-decoration:none;line-height:30px';
+      var st = el('span', 'hint');
+      var sr = el('div', 'save-row'); sr.appendChild(rb); sr.appendChild(cl); sr.appendChild(st); pane.appendChild(sr);
+      rb.addEventListener('click', function () { restartZam(rb, st); });
+    }).catch(function () { pane.innerHTML = ''; pane.appendChild(el('div', 'empty', 'Could not load status.')); });
+  }
 
   // ---------- App: New Agent ----------
   function mountNewAgent(body, win) {
