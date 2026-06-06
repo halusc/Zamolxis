@@ -72,6 +72,9 @@ interface PersistedSettings {
   workDir?: string;
   batDir?: string;
   routeChain?: string[];
+  primaryRoute?: string;
+  fastRoute?: string;
+  smartRoute?: string;
   lawsEnabled?: boolean;
   agentRestore?: boolean;
   persistAgentCreated?: boolean;
@@ -139,6 +142,9 @@ export class SettingsManager {
         localTemp: this.config.localTemp ?? null,
         localRouting: this.config.localRouting,
         routeChain: this.config.routeChain,
+        primaryRoute: this.config.primaryRoute ?? '',
+        fastRoute: this.config.fastRoute ?? '',
+        smartRoute: this.config.smartRoute ?? '',
         lawsEnabled: this.config.lawsEnabled,
         agentRestore: this.config.agentRestore,
         persistAgentCreated: this.config.persistAgentCreated,
@@ -269,6 +275,14 @@ export class SettingsManager {
       if (chain.length) {
         this.config.routeChain = chain;
         p.routeChain = chain;
+      }
+    }
+    // Per-role model routing (Settings → Engine pickers). Empty string clears the override.
+    for (const role of ['primaryRoute', 'fastRoute', 'smartRoute'] as const) {
+      if (typeof live[role] === 'string') {
+        const v = (live[role] as string).trim().toLowerCase();
+        this.config[role] = v || undefined;
+        p[role] = v || undefined;
       }
     }
     if (typeof live.lawsEnabled === 'boolean') {
