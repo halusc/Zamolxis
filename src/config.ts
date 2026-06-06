@@ -288,6 +288,7 @@ export function applyPersistedSettings(config: ZamolxisConfig): void {
       if (typeof s.permissionMode === 'string') config.permissionMode = s.permissionMode as ZamolxisConfig['permissionMode'];
       if (typeof s.maxTurns === 'number') config.maxTurns = s.maxTurns;
       if (typeof s.maxConcurrent === 'number') config.maxConcurrent = s.maxConcurrent;
+      if (typeof s.turnTimeoutSeconds === 'number' && s.turnTimeoutSeconds > 0) config.turnTimeoutMs = s.turnTimeoutSeconds * 1000;
       if (typeof s.systemPromptAppend === 'string') config.systemPromptAppend = s.systemPromptAppend || undefined;
       if (typeof s.sandboxBackend === 'string') config.sandbox.backend = s.sandboxBackend as ZamolxisConfig['sandbox']['backend'];
       if (s.localRouting === 'off' || s.localRouting === 'auto') config.localRouting = s.localRouting;

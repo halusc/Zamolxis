@@ -430,6 +430,7 @@
       ['default', 'acceptEdits', 'bypassPermissions', 'plan', 'dontAsk'].forEach(function (m) { var o = el('option'); o.value = m; o.textContent = m; if (live.permissionMode === m) o.selected = true; perm.appendChild(o); });
       var turns = inp(live.maxTurns); turns.type = 'number';
       var conc = inp(live.maxConcurrent); conc.type = 'number';
+      var tmo = inp(live.turnTimeoutSeconds); tmo.type = 'number'; tmo.min = '10';
       var routing = el('button', 'switch' + (live.localRouting !== 'off' ? ' on' : ''), "<span class='knob'></span>");
       routing.addEventListener('click', function () { routing.classList.toggle('on'); });
       var sys = el('textarea', 'inp'); sys.style.cssText = 'width:100%;height:80px'; sys.value = live.systemPromptAppend || '';
@@ -439,13 +440,14 @@
       pane.appendChild(fld('Fast model', fast));
       pane.appendChild(fld('Permission mode', perm));
       var row = el('div', 'row2'); var c1 = el('div'); c1.style.flex = '1'; c1.appendChild(fld('Max turns', turns)); var c2 = el('div'); c2.style.flex = '1'; c2.appendChild(fld('Max concurrent', conc)); row.appendChild(c1); row.appendChild(c2); pane.appendChild(row);
+      pane.appendChild(fld('Turn timeout (seconds)', tmo, 'How long a single turn may run before it is stopped. e.g. 3600 = 1 hour, 14400 = 4 hours. Applies live.'));
       var rrow = el('div'); rrow.style.cssText = 'display:flex;align-items:center;gap:8px'; rrow.appendChild(routing); rrow.appendChild(el('span', 'hint', 'Local-model routing (auto / off)')); pane.appendChild(fld('Routing', rrow));
       pane.appendChild(fld('System prompt append', sys));
       var status = el('span', 'hint'); var save = el('button', 'btn', 'Save');
       var sr = el('div', 'save-row'); sr.appendChild(save); sr.appendChild(status); pane.appendChild(sr);
       save.addEventListener('click', function () {
         save.disabled = true; status.textContent = 'Saving...';
-        postSettings({ live: { agentName: name.value.trim(), model: model.value.trim(), fastModel: fast.value.trim(), permissionMode: perm.value, maxTurns: Number(turns.value) || undefined, maxConcurrent: Number(conc.value) || undefined, localRouting: routing.classList.contains('on') ? 'auto' : 'off', systemPromptAppend: sys.value } })
+        postSettings({ live: { agentName: name.value.trim(), model: model.value.trim(), fastModel: fast.value.trim(), permissionMode: perm.value, maxTurns: Number(turns.value) || undefined, maxConcurrent: Number(conc.value) || undefined, turnTimeoutSeconds: Number(tmo.value) || undefined, localRouting: routing.classList.contains('on') ? 'auto' : 'off', systemPromptAppend: sys.value } })
           .then(function (r) { save.disabled = false; status.textContent = 'Saved.' + (r && r.restartRequired ? ' Some changes need a restart (System tab).' : ''); })
           .catch(function () { save.disabled = false; status.textContent = 'Failed.'; });
       });
