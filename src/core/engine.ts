@@ -1312,6 +1312,26 @@ export class Engine {
     // Claude for "current info" (e.g. "what time is it"): the time is injected, so a cheap tier suffices.
     if (req.agentJob) return { tiers: cloud, claude: claudeIn || elev };
     if (this.hardClaudeOnly(req.text) && claudeIn) return { tiers: [], claude: true }; // needs Claude-only tools
+    // Per-role routing from the Settings model pickers (only when a Primary is configured). Honors the
+    // user's exact roles — fast (simple turns) → primary → smartest — so a free provider can be the
+    // primary answerer or the final/smartest tier (NOT reordered by cheapOrder). Guarded: unset = default.
+    if (!req.agentJob && (!req.route || req.route === 'auto') && config.primaryRoute) {
+      const isClaude = (t?: string) => t === 'claude';
+      const simple = this.looksSimple(req.text) && !needsCurrentInfo(req.text);
+      const seq: string[] = [];
+      if (config.fastRoute && !isClaude(config.fastRoute) && simple) seq.push(config.fastRoute);
+      if (isClaude(config.primaryRoute)) {
+        const t = seq.filter((x, i) => seq.indexOf(x) === i).filter((x) => !(x === 'local' && config.localRouting === 'off'));
+        return { tiers: t, claude: true }; // Claude is the primary answerer
+      }
+      seq.push(config.primaryRoute);
+      const smart = config.smartRoute || 'claude';
+      let claude = elev;
+      if (isClaude(smart)) claude = true;
+      else if (smart !== config.primaryRoute) seq.push(smart);
+      const tiers = seq.filter((x, i) => seq.indexOf(x) === i).filter((x) => !(x === 'local' && config.localRouting === 'off'));
+      return { tiers, claude };
+    }
     // Live/current-fact questions: the tiny local model mis-reasons even WHEN it searches
     // (grabs the wrong game, can't map "two nights ago", defaults the venue) — so skip
     // 'local' and use a capable tier: free cloud (e.g. Groq 70B) first, then Claude. With a
