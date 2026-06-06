@@ -61,6 +61,7 @@ interface PersistedSettings {
   permissionMode?: string;
   maxTurns?: number;
   maxConcurrent?: number;
+  turnTimeoutSeconds?: number;
   systemPromptAppend?: string;
   sandboxBackend?: string;
   localRouting?: 'off' | 'auto';
@@ -127,6 +128,7 @@ export class SettingsManager {
         permissionMode: this.config.permissionMode,
         maxTurns: this.config.maxTurns,
         maxConcurrent: this.config.maxConcurrent,
+        turnTimeoutSeconds: Math.round(this.config.turnTimeoutMs / 1000),
         systemPromptAppend: this.config.systemPromptAppend ?? '',
         sandboxBackend: this.sandbox.defaultBackend,
         localModel: this.config.localModel?.model ?? '',
@@ -215,6 +217,7 @@ export class SettingsManager {
     }
     if (typeof live.maxTurns === 'number' && live.maxTurns > 0) { this.config.maxTurns = Math.floor(live.maxTurns); p.maxTurns = this.config.maxTurns; }
     if (typeof live.maxConcurrent === 'number' && live.maxConcurrent > 0) { this.config.maxConcurrent = Math.floor(live.maxConcurrent); p.maxConcurrent = this.config.maxConcurrent; }
+    if (typeof live.turnTimeoutSeconds === 'number' && live.turnTimeoutSeconds > 0) { this.config.turnTimeoutMs = Math.floor(live.turnTimeoutSeconds) * 1000; p.turnTimeoutSeconds = Math.floor(live.turnTimeoutSeconds); }
     if (typeof live.systemPromptAppend === 'string') { this.config.systemPromptAppend = live.systemPromptAppend.trim() || undefined; p.systemPromptAppend = live.systemPromptAppend.trim(); }
     if (typeof live.sandboxBackend === 'string' && this.sandbox.setDefaultBackend(live.sandboxBackend as BackendName)) {
       this.config.sandbox.backend = live.sandboxBackend as BackendName;
