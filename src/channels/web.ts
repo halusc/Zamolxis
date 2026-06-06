@@ -301,7 +301,8 @@ export class WebChannel implements Channel {
       '.webp': 'image/webp', '.gif': 'image/gif', '.ico': 'image/x-icon',
       '.woff2': 'font/woff2', '.woff': 'font/woff',
     };
-    res.writeHead(200, { 'content-type': types[ext] || 'application/octet-stream' });
+    // no-store so the desktop UI always loads fresh after an upgrade (no stale cached desktop.js/css)
+    res.writeHead(200, { 'content-type': types[ext] || 'application/octet-stream', 'cache-control': 'no-store' });
     res.end(data);
     return true;
   }
@@ -326,7 +327,7 @@ export class WebChannel implements Channel {
       const name = effectiveName(this.config.agentName).replace(/[<>'"`\\]/g, '');
       try {
         const html = fs.readFileSync(path.join(REPO_ROOT, 'webui', 'index.html'), 'utf8').replace(/__AGENT_NAME__/g, name);
-        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
         res.end(html);
       } catch {
         // webui not present yet -> fall back to the classic inline page.
