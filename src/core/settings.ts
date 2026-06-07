@@ -344,6 +344,18 @@ export class SettingsManager {
         process.env[f.key] = v;
       }
     }
+    // Explicit credential removal (e.g. clearing a provider's key in the Providers panel): drop it
+    // from both the persisted store and the live env so the provider de-configures immediately and
+    // disappears from the active/model lists. Separate from the save loop above (which never wipes a
+    // secret on a blank, since the write-only form always submits blank secrets).
+    if (Array.isArray((patch as { clearCredentials?: unknown }).clearCredentials)) {
+      p.credentials = p.credentials ?? {};
+      for (const key of (patch as { clearCredentials: unknown[] }).clearCredentials) {
+        if (typeof key !== 'string') continue;
+        delete p.credentials[key];
+        delete process.env[key];
+      }
+    }
 
     this.persist();
     const restartRequired = restartSig() !== before;

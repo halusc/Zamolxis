@@ -516,13 +516,21 @@
         card.appendChild(el('div', 'hint', (p.model || '') + (p.note ? (' — ' + p.note) : '') + (typeof p.used === 'number' ? (' · used ' + p.used + (p.freeDaily ? ('/' + p.freeDaily) : '')) : '')));
         if (p.envKey) {
           var krow = el('div'); krow.style.cssText = 'display:flex;gap:8px;margin-top:8px';
-          var key = el('input', 'inp'); key.type = 'password'; key.style.flex = '1'; key.placeholder = p.configured ? '•••• set — paste to replace' : 'Paste API key';
+          var key = el('input', 'inp'); key.type = 'password'; key.style.flex = '1';
+          key.placeholder = p.configured ? '•••• set — paste to replace, or Save empty to remove' : 'Paste API key';
           var sv = el('button', 'btn', 'Save'); var st = el('div', 'hint'); st.style.marginTop = '4px';
-          krow.appendChild(key); krow.appendChild(sv); card.appendChild(krow); card.appendChild(st);
+          krow.appendChild(key); krow.appendChild(sv);
+          function clearKey() {
+            sv.disabled = true; st.textContent = 'Removing...';
+            postSettings({ clearCredentials: [p.envKey] }).then(function () { st.textContent = 'Removed.'; tabProviders(pane); }).catch(function () { sv.disabled = false; st.textContent = 'Failed.'; });
+          }
+          if (p.configured) { var rm = el('button', 'btn ghost', 'Remove'); rm.addEventListener('click', clearKey); krow.appendChild(rm); }
+          card.appendChild(krow); card.appendChild(st);
           sv.addEventListener('click', function () {
-            var v = key.value.trim(); if (!v) { st.textContent = 'Enter a key.'; return; }
+            var v = key.value.trim();
+            if (!v) { if (p.configured) clearKey(); else st.textContent = 'Enter a key.'; return; }
             sv.disabled = true; st.textContent = 'Saving...'; var cred = {}; cred[p.envKey] = v;
-            postSettings({ credentials: cred }).then(function () { sv.disabled = false; key.value = ''; st.textContent = 'Saved — restart to apply.'; }).catch(function () { sv.disabled = false; st.textContent = 'Failed.'; });
+            postSettings({ credentials: cred }).then(function () { sv.disabled = false; key.value = ''; st.textContent = 'Saved.'; tabProviders(pane); }).catch(function () { sv.disabled = false; st.textContent = 'Failed.'; });
           });
         }
         pane.appendChild(card);
