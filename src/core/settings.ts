@@ -51,6 +51,9 @@ const CRED_FIELDS: Array<{ key: string; label: string; group: string; secret: bo
   { key: 'GROQ_API_KEY', label: 'Groq key (free fast cloud tier)', group: 'providers', secret: true },
   { key: 'MISTRAL_API_KEY', label: 'Mistral key (free cloud tier)', group: 'providers', secret: true },
   { key: 'DEEPSEEK_API_KEY', label: 'DeepSeek key (paid, very cheap)', group: 'providers', secret: true },
+  { key: 'NVIDIA_API_KEY', label: 'NVIDIA NIM key (free cloud tier — build.nvidia.com)', group: 'providers', secret: true },
+  { key: 'SAMBANOVA_API_KEY', label: 'SambaNova key (free fast cloud tier)', group: 'providers', secret: true },
+  { key: 'PERPLEXITY_API_KEY', label: 'Perplexity Sonar key (PAID: search-grounded; not a free tier)', group: 'providers', secret: true },
 ];
 
 interface PersistedSettings {
@@ -338,6 +341,18 @@ export class SettingsManager {
         // for CLAUDE_CODE_OAUTH_TOKEN especially: the engine reads process.env per turn, so the
         // subscription token works on the very next message (no .env editing, no restart).
         process.env[f.key] = v;
+      }
+    }
+    // Explicit credential removal (e.g. clearing a provider's key in the Providers panel): drop it
+    // from both the persisted store and the live env so the provider de-configures immediately and
+    // disappears from the active/model lists. Separate from the save loop above (which never wipes a
+    // secret on a blank, since the write-only form always submits blank secrets).
+    if (Array.isArray((patch as { clearCredentials?: unknown }).clearCredentials)) {
+      p.credentials = p.credentials ?? {};
+      for (const key of (patch as { clearCredentials: unknown[] }).clearCredentials) {
+        if (typeof key !== 'string') continue;
+        delete p.credentials[key];
+        delete process.env[key];
       }
     }
 
