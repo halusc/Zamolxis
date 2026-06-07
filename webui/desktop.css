@@ -332,3 +332,27 @@ body[data-mode="dark"][data-os="mac"] .titlebar { background: rgba(40,40,40,.8);
 .help-doc b { font-weight: 650; }
 body[data-mode="dark"] .help-doc { color: #e6e6e6; }
 body[data-mode="dark"] .help-doc h3 { border-bottom-color: rgba(255,255,255,.12); }
+
+/* ===== App suite: File Manager, categorized menu, document views ===== */
+.fm-row { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; cursor: default; }
+.fm-row:hover { background: rgba(128,128,128,.14); }
+.fm-ico { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.fm-ico svg { width: 18px; height: 18px; }
+.fm-act { display: flex; gap: 4px; opacity: 0; transition: opacity .12s; flex: 0 0 auto; }
+.fm-row:hover .fm-act { opacity: 1; }
+.btn.mini { padding: 2px 7px; font-size: 11px; line-height: 16px; }
+/* Categorized application menu (OS.js-style) */
+#startmenu-apps { overflow: auto; }
+.sm-cat { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; opacity: .55; margin: 12px 4px 4px; }
+.sm-cat:first-child { margin-top: 2px; }
+.sm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 4px; }
+/* Document / spreadsheet views */
+.docview-doc { max-width: 720px; margin: 0 auto; }
+.docview-doc img { max-width: 100%; }
+.docview-sheet { overflow: auto; margin-bottom: 16px; }
+.docview-sheet table { border-collapse: collapse; font-size: 12px; }
+.docview-sheet td, .docview-sheet th { border: 1px solid #ccc; padding: 2px 6px; min-width: 42px; }
+/* Top-bar Apps launcher */
+#apps-btn { background: transparent; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 2px 10px; margin-left: 8px; border-radius: 6px; }
+#apps-btn:hover { background: rgba(128,128,128,.2); }
+body[data-os="win"] #apps-btn { display: none; }

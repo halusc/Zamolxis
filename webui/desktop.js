@@ -14,7 +14,19 @@
     settings: "<svg viewBox='0 0 24 24' fill='none' stroke='#3a3a3a' stroke-width='1.6'><circle cx='12' cy='12' r='3.2'/><path d='M19.4 13a7.8 7.8 0 0 0 0-2l2-1.5-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1l-.4-2.6H9.1l-.4 2.6a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L2.6 11a7.8 7.8 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.6h4.9l.4-2.6a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4z'/></svg>",
     agent: "<svg viewBox='0 0 24 24' fill='none' stroke='#2b6fd6' stroke-width='1.6'><rect x='4' y='8' width='16' height='12' rx='2.5'/><circle cx='9' cy='14' r='1.4' fill='#2b6fd6' stroke='none'/><circle cx='15' cy='14' r='1.4' fill='#2b6fd6' stroke='none'/><path d='M12 4v4M8 20v1.5M16 20v1.5'/></svg>",
     newagent: "<svg viewBox='0 0 24 24' fill='none' stroke='#2e9e3f' stroke-width='1.7'><circle cx='12' cy='12' r='9'/><path d='M12 8v8M8 12h8'/></svg>",
-    help: "<svg viewBox='0 0 24 24' fill='none' stroke='#7a5cd0' stroke-width='1.7'><circle cx='12' cy='12' r='9'/><path d='M9.2 9.2a2.8 2.8 0 1 1 4 2.5c-.9.5-1.7 1-1.7 2.1'/><circle cx='11.6' cy='17' r='0.4' fill='#7a5cd0' stroke='none'/></svg>"
+    help: "<svg viewBox='0 0 24 24' fill='none' stroke='#7a5cd0' stroke-width='1.7'><circle cx='12' cy='12' r='9'/><path d='M9.2 9.2a2.8 2.8 0 1 1 4 2.5c-.9.5-1.7 1-1.7 2.1'/><circle cx='11.6' cy='17' r='0.4' fill='#7a5cd0' stroke='none'/></svg>",
+    files: "<svg viewBox='0 0 24 24' fill='#f5c542' stroke='#c9981f' stroke-width='1'><path d='M3 6.5A1.5 1.5 0 0 1 4.5 5h4l2 2h7A1.5 1.5 0 0 1 19 8.5v9A1.5 1.5 0 0 1 17.5 19h-13A1.5 1.5 0 0 1 3 17.5z'/></svg>",
+    editor: "<svg viewBox='0 0 24 24' fill='none' stroke='#3a7bd5' stroke-width='1.6'><rect x='4' y='3' width='16' height='18' rx='2'/><path d='M7.5 8h9M7.5 12h9M7.5 16h6'/></svg>",
+    image: "<svg viewBox='0 0 24 24' fill='none' stroke='#2e9e6b' stroke-width='1.6'><rect x='3' y='5' width='18' height='14' rx='2'/><circle cx='8.5' cy='10' r='1.6' fill='#2e9e6b' stroke='none'/><path d='M21 16l-5-5-7 7' /></svg>",
+    film: "<svg viewBox='0 0 24 24' fill='none' stroke='#c0508a' stroke-width='1.6'><rect x='3' y='4' width='18' height='16' rx='2'/><path d='M3 9h18M3 15h18M8 4v16M16 4v16'/></svg>",
+    book: "<svg viewBox='0 0 24 24' fill='none' stroke='#a06a2c' stroke-width='1.6'><path d='M4 5.5A2 2 0 0 1 6 4h6v16H6a2 2 0 0 0-2 1.5z'/><path d='M20 5.5A2 2 0 0 0 18 4h-6v16h6a2 2 0 0 1 2 1.5z'/></svg>",
+    pdf: "<svg viewBox='0 0 24 24' fill='none' stroke='#d3443b' stroke-width='1.6'><path d='M6 3h8l4 4v14H6z'/><path d='M14 3v4h4'/><text x='12' y='17' font-size='5.5' text-anchor='middle' fill='#d3443b' stroke='none' font-family='Arial' font-weight='700'>PDF</text></svg>",
+    doc: "<svg viewBox='0 0 24 24' fill='none' stroke='#2b5797' stroke-width='1.6'><path d='M6 3h8l4 4v14H6z'/><path d='M14 3v4h4'/><path d='M9 12h6M9 15h6M9 9h3'/></svg>",
+    sheet: "<svg viewBox='0 0 24 24' fill='none' stroke='#1f8a4c' stroke-width='1.6'><rect x='4' y='4' width='16' height='16' rx='1.5'/><path d='M4 10h16M4 15h16M10 4v16M15 4v16'/></svg>",
+    calc: "<svg viewBox='0 0 24 24' fill='none' stroke='#555' stroke-width='1.6'><rect x='5' y='3' width='14' height='18' rx='2'/><rect x='7.5' y='5.5' width='9' height='3.5' rx='.6'/><path d='M8.5 13h0M12 13h0M15.5 13h0M8.5 16.5h0M12 16.5h0M15.5 16.5h0' stroke-linecap='round' stroke-width='2.2'/></svg>",
+    term: "<svg viewBox='0 0 24 24' fill='none' stroke='#2c8f6f' stroke-width='1.6'><rect x='3' y='4' width='18' height='16' rx='2'/><path d='M7 9l3 3-3 3M12.5 15h4'/></svg>",
+    net: "<svg viewBox='0 0 24 24' fill='none' stroke='#5566cc' stroke-width='1.6'><circle cx='12' cy='12' r='9'/><path d='M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18'/></svg>",
+    chat: "<svg viewBox='0 0 24 24' fill='none' stroke='#0a8acb' stroke-width='1.6'><path d='M4 5h16v11H9l-4 3.5V16H4z'/><path d='M8 9h8M8 12h5'/></svg>"
   };
 
   // Per-agent app icon: a colored rounded tile with the agent's initial (deterministic from the name).
@@ -66,6 +78,15 @@
     it: { 'Send': 'Invia', 'Route': 'Instradamento', 'Save': 'Salva', 'Close': 'Chiudi', 'Remove': 'Rimuovi', 'Delete': 'Elimina', 'Import': 'Importa', 'Minimize': 'Riduci a icona', 'Maximize': 'Ingrandisci', 'Appearance': 'Aspetto', 'Engine': 'Motore', 'Providers': 'Provider', 'Skills': 'Competenze', 'System': 'Sistema', 'Help': 'Aiuto', 'Desktop style': 'Stile desktop', 'Appearance mode': 'Modalità aspetto', 'Language': 'Lingua', 'Auto': 'Auto', 'Light': 'Chiaro', 'Dark': 'Scuro', 'All apps': 'Tutte le app', 'Search apps': 'Cerca app', 'No apps match.': 'Nessuna app corrisponde.', 'Message': 'Messaggio a', 'New Agent': 'Nuovo agente', 'Settings': 'Impostazioni', 'Attach files': 'Allega file', 'You': 'Tu', 'connecting...': 'connessione...', 'connected': 'connesso', 'reconnecting': 'riconnessione', 'error': 'errore', 'thinking...': 'sto pensando...', 'uploading...': 'caricamento...', 'Loading...': 'Caricamento...', 'Choose the interface language. Default is English; untranslated labels stay in English.': "Scegli la lingua dell'interfaccia. L'impostazione predefinita è l'inglese; le etichette non tradotte restano in inglese.", 'Auto follows your OS (detected: {os}). Override below.': 'Auto segue il tuo SO (rilevato: {os}). Modificabile sotto.', '"Classic" opens the previous stable Zamolxis interface (the last stable version), kept as a fourth option.': "« Classic » apre la precedente interfaccia stabile di Zamolxis (l'ultima versione stabile), mantenuta come quarta opzione.", 'Auto follows your system light/dark preference (now: {mode}).': 'Auto segue la preferenza chiaro/scuro del sistema (ora: {mode}).', 'Each model can be a Claude variant, Local, or any authenticated free provider. Model = answers your chats · Fast = simple turns · Smartest = hard turns / final fallback. "Claude (default)" keeps Claude as the rescue tier.': 'Ogni modello può essere una variante di Claude, Local o qualsiasi provider gratuito autenticato. Modello = risponde alle chat · Veloce = turni semplici · Più intelligente = turni difficili / ripiego finale. « Claude (predefinito) » mantiene Claude come livello di soccorso.', 'Model (answers your chats)': 'Modello (risponde alle chat)', 'Fast model (simple turns)': 'Modello veloce (turni semplici)', 'Smartest model (hard turns / final fallback)': 'Modello più intelligente (turni difficili / ripiego finale)', 'Assistant name': "Nome dell'assistente", 'Permission mode': 'Modalità autorizzazioni', 'Max turns': 'Turni max', 'Max concurrent': 'Concorrenza max', 'Turn timeout (seconds)': 'Timeout per turno (secondi)', 'How long a single turn may run before it is stopped. e.g. 3600 = 1 hour, 14400 = 4 hours. Applies live.': 'Per quanto può durare un singolo turno prima di essere fermato. Es. 3600 = 1 ora, 14400 = 4 ore. Applicato subito.', 'Local-model routing (auto / off)': 'Instradamento modello locale (auto / off)', 'Routing': 'Instradamento', 'System prompt append': 'Aggiunta al prompt di sistema', 'Saving...': 'Salvataggio...', 'Saved.': 'Salvato.', ' Some changes need a restart (System tab).': ' Alcune modifiche richiedono un riavvio (scheda Sistema).', 'Failed.': 'Non riuscito.', 'Could not load settings.': 'Impossibile caricare le impostazioni.', 'Auto (smartest decides)': 'Auto (decide il più intelligente)', 'Free cloud (rotates free providers)': 'Cloud gratuito (alterna i provider gratuiti)', 'Claude (subscription)': 'Claude (abbonamento)', 'Loading providers...': 'Caricamento provider...', 'Saving a key persists it; it takes effect after a restart (System tab).': 'Salvare una chiave la conserva; ha effetto dopo un riavvio (scheda Sistema).', 'configured': 'configurato', '•••• set — paste to replace, or Save empty to remove': '•••• impostata — incolla per sostituire, o Salva vuoto per rimuovere', 'Paste API key': 'Incolla la chiave API', 'Removing...': 'Rimozione...', 'Removed.': 'Rimosso.', 'Enter a key.': 'Inserisci una chiave.', 'Could not load providers.': 'Impossibile caricare i provider.', 'Loading skills...': 'Caricamento competenze...', 'No skills match.': 'Nessuna competenza corrisponde.', 'Could not load skills.': 'Impossibile caricare le competenze.', 'Search {n} skills': 'Cerca tra {n} competenze', 'Version': 'Versione', 'Primary model': 'Modello principale', 'Fast model': 'Modello veloce', 'Local model': 'Modello locale', 'Tokens (session)': 'Token (sessione)', '(none)': '(nessuno)', 'Updates': 'Aggiornamenti', 'Update available — {n} new commit(s) on {branch}': 'Aggiornamento disponibile — {n} nuovo/i commit su {branch}', 'Up to date on {branch}.': 'Aggiornato su {branch}.', 'Check for updates': 'Verifica aggiornamenti', 'Upgrade': 'Aggiorna', 'Upgrade now ({n})': 'Aggiorna ora ({n})', 'Checking...': 'Verifica...', 'Check failed.': 'Verifica non riuscita.', 'Upgrade Zamolxis now? It will pull the latest, rebuild, and restart (about a minute).': "Aggiornare Zamolxis ora? Scaricherà l'ultima versione, ricompilerà e riavvierà (circa un minuto).", 'Upgrading — pulling, building, restarting...': 'Aggiornamento — download, build, riavvio...', 'Updated — reloading...': 'Aggiornato — ricaricamento...', 'Still working... reload manually in a bit.': 'Ancora in corso... ricarica manualmente tra poco.', 'Upgrade failed to start.': "Avvio dell'aggiornamento non riuscito.", 'Maintenance': 'Manutenzione', 'Restart Zamolxis': 'Riavvia Zamolxis', 'Open classic UI': "Apri l'interfaccia classica", 'Restarting...': 'Riavvio...', 'Could not load status.': 'Impossibile caricare lo stato.', 'Agent name': "Nome dell'agente", 'Instructions': 'Istruzioni', 'This becomes the agent app. It can run with or without a chat window.': "Questo diventa l'app dell'agente. Può funzionare con o senza finestra di chat.", 'Model': 'Modello', 'Auto, Local, Free cloud, any authenticated provider, or Claude.': 'Auto, Local, Cloud gratuito, qualsiasi provider autenticato o Claude.', 'Create app': "Crea l'app", 'Name is required.': 'Il nome è obbligatorio.', 'Creating...': 'Creazione...', 'Created. Added to the desktop.': 'Creato. Aggiunto al desktop.', 'Backend unreachable.': 'Backend non raggiungibile.', 'e.g. researcher': 'es. ricercatore', 'What should this agent do?': 'Cosa deve fare questo agente?', 'Toggle chat window for this app': 'Attiva/disattiva la finestra di chat per questa app', 'Chat window': 'Finestra di chat', 'Run job': 'Esegui attività', 'Running...': 'Esecuzione...', 'Done': 'Fatto', 'Unreachable': 'Non raggiungibile', 'Ask me to do something, or give me a task.': "Chiedimi qualcosa o assegnami un'attività.", '(no reply)': '(nessuna risposta)', 'Chat window is off — this agent runs headless: it executes its job on demand or on schedule via the existing agent/skill mechanism. Turn the chat on above to talk to it directly.': "La finestra di chat è disattivata — questo agente funziona senza interfaccia: esegue la sua attività su richiesta o pianificata tramite il meccanismo esistente di agenti/competenze. Attiva la chat sopra per parlargli direttamente.", 'Recent activity will appear here.': "L'attività recente apparirà qui.", 'Model: {m}': 'Modello: {m}', '(default)': '(predefinito)', 'Help & Guide': 'Aiuto e guida' }
   };
   var LANGS = [['en', 'English'], ['es', 'Español'], ['fr', 'Français'], ['de', 'Deutsch'], ['ro', 'Română'], ['it', 'Italiano']];
+  // App names, categories and File-Manager UI strings (merged into I18N to keep the main table readable).
+  var I18N_APPS = {
+    es: { 'Files': 'Archivos', 'Text Editor': 'Editor de texto', 'Calculator': 'Calculadora', 'Image Viewer': 'Visor de imágenes', 'Media Player': 'Reproductor multimedia', 'Ebook Reader': 'Lector de libros', 'Word': 'Word', 'Excel': 'Excel', 'SFTP Client': 'Cliente SFTP', 'Telnet': 'Telnet', 'Messages': 'Mensajes', 'Office': 'Oficina', 'Media': 'Multimedia', 'Network': 'Red', 'Utilities': 'Utilidades', 'Communication': 'Comunicación', 'Agents': 'Agentes', 'Apps': 'Apps', 'New file': 'Nuevo archivo', 'New folder': 'Nueva carpeta', 'Rename': 'Renombrar', 'Download': 'Descargar', 'Refresh': 'Actualizar', 'Open': 'Abrir', 'Open from File Manager': 'Abrir desde el Administrador de archivos', 'No file open': 'Ningún archivo abierto', 'Ask Zamolxis to edit': 'Pedir a Zamolxis que edite', 'empty folder': 'carpeta vacía', 'Could not open.': 'No se pudo abrir.' },
+    fr: { 'Files': 'Fichiers', 'Text Editor': 'Éditeur de texte', 'Calculator': 'Calculatrice', 'Image Viewer': "Visionneuse d'images", 'Media Player': 'Lecteur multimédia', 'Ebook Reader': 'Lecteur de livres', 'Word': 'Word', 'Excel': 'Excel', 'SFTP Client': 'Client SFTP', 'Telnet': 'Telnet', 'Messages': 'Messages', 'Office': 'Bureautique', 'Media': 'Multimédia', 'Network': 'Réseau', 'Utilities': 'Utilitaires', 'Communication': 'Communication', 'Agents': 'Agents', 'Apps': 'Apps', 'New file': 'Nouveau fichier', 'New folder': 'Nouveau dossier', 'Rename': 'Renommer', 'Download': 'Télécharger', 'Refresh': 'Actualiser', 'Open': 'Ouvrir', 'Open from File Manager': 'Ouvrir depuis le Gestionnaire de fichiers', 'No file open': 'Aucun fichier ouvert', 'Ask Zamolxis to edit': 'Demander à Zamolxis de modifier', 'empty folder': 'dossier vide', 'Could not open.': "Impossible d'ouvrir." },
+    de: { 'Files': 'Dateien', 'Text Editor': 'Texteditor', 'Calculator': 'Rechner', 'Image Viewer': 'Bildbetrachter', 'Media Player': 'Medienplayer', 'Ebook Reader': 'E-Book-Reader', 'Word': 'Word', 'Excel': 'Excel', 'SFTP Client': 'SFTP-Client', 'Telnet': 'Telnet', 'Messages': 'Nachrichten', 'Office': 'Büro', 'Media': 'Medien', 'Network': 'Netzwerk', 'Utilities': 'Dienstprogramme', 'Communication': 'Kommunikation', 'Agents': 'Agenten', 'Apps': 'Apps', 'New file': 'Neue Datei', 'New folder': 'Neuer Ordner', 'Rename': 'Umbenennen', 'Download': 'Herunterladen', 'Refresh': 'Aktualisieren', 'Open': 'Öffnen', 'Open from File Manager': 'Im Datei-Manager öffnen', 'No file open': 'Keine Datei geöffnet', 'Ask Zamolxis to edit': 'Zamolxis um Bearbeitung bitten', 'empty folder': 'leerer Ordner', 'Could not open.': 'Konnte nicht geöffnet werden.' },
+    ro: { 'Files': 'Fișiere', 'Text Editor': 'Editor de text', 'Calculator': 'Calculator', 'Image Viewer': 'Vizualizator imagini', 'Media Player': 'Player media', 'Ebook Reader': 'Cititor de cărți', 'Word': 'Word', 'Excel': 'Excel', 'SFTP Client': 'Client SFTP', 'Telnet': 'Telnet', 'Messages': 'Mesaje', 'Office': 'Birou', 'Media': 'Media', 'Network': 'Rețea', 'Utilities': 'Utilitare', 'Communication': 'Comunicare', 'Agents': 'Agenți', 'Apps': 'Aplicații', 'New file': 'Fișier nou', 'New folder': 'Dosar nou', 'Rename': 'Redenumește', 'Download': 'Descarcă', 'Refresh': 'Reîmprospătează', 'Open': 'Deschide', 'Open from File Manager': 'Deschide din Managerul de fișiere', 'No file open': 'Niciun fișier deschis', 'Ask Zamolxis to edit': 'Cere lui Zamolxis să editeze', 'empty folder': 'dosar gol', 'Could not open.': 'Nu s-a putut deschide.' },
+    it: { 'Files': 'File', 'Text Editor': 'Editor di testo', 'Calculator': 'Calcolatrice', 'Image Viewer': 'Visualizzatore immagini', 'Media Player': 'Lettore multimediale', 'Ebook Reader': 'Lettore di e-book', 'Word': 'Word', 'Excel': 'Excel', 'SFTP Client': 'Client SFTP', 'Telnet': 'Telnet', 'Messages': 'Messaggi', 'Office': 'Ufficio', 'Media': 'Multimedia', 'Network': 'Rete', 'Utilities': 'Utilità', 'Communication': 'Comunicazione', 'Agents': 'Agenti', 'Apps': 'App', 'New file': 'Nuovo file', 'New folder': 'Nuova cartella', 'Rename': 'Rinomina', 'Download': 'Scarica', 'Refresh': 'Aggiorna', 'Open': 'Apri', 'Open from File Manager': 'Apri dal File Manager', 'No file open': 'Nessun file aperto', 'Ask Zamolxis to edit': 'Chiedi a Zamolxis di modificare', 'empty folder': 'cartella vuota', 'Could not open.': 'Impossibile aprire.' }
+  };
+  Object.keys(I18N_APPS).forEach(function (l) { if (I18N[l]) Object.keys(I18N_APPS[l]).forEach(function (k) { I18N[l][k] = I18N_APPS[l][k]; }); });
   function langChoice() { return localStorage.getItem('zx_lang') || 'en'; }
   function T(s) { var L = langChoice(); if (L === 'en') return s; var d = I18N[L]; return (d && d[s]) || s; }
   function Tf(s, vars) { var out = T(s); if (vars) Object.keys(vars).forEach(function (k) { out = out.split('{' + k + '}').join(vars[k]); }); return out; }
@@ -241,18 +262,32 @@
   var startMenu = $('#startmenu');
   function toggleStart() { startMenu.classList.toggle('hidden'); if (!startMenu.classList.contains('hidden')) { renderStart(); $('#start-search-input').value = ''; $('#start-search-input').focus(); } }
   function closeStart() { startMenu.classList.add('hidden'); }
+  function smItem(a) {
+    var item = el('div', 'sm-app');
+    item.appendChild(el('div', 'ico', a.iconSvg));
+    item.appendChild(el('div', 'label', a.name));
+    item.title = a.name;
+    item.addEventListener('click', function () { closeStart(); launchApp(a.id); });
+    return item;
+  }
   function renderStart(filter) {
     var wrap = $('#startmenu-apps'); wrap.innerHTML = '';
     var list = appList();
-    if (filter) { var f = filter.toLowerCase(); list = list.filter(function (a) { return a.name.toLowerCase().indexOf(f) !== -1; }); }
-    list.forEach(function (a) {
-      var item = el('div', 'sm-app');
-      item.appendChild(el('div', 'ico', a.iconSvg));
-      item.appendChild(el('div', 'label', a.name));
-      item.addEventListener('click', function () { closeStart(); launchApp(a.id); });
-      wrap.appendChild(item);
+    if (filter) {
+      var f = filter.toLowerCase(); list = list.filter(function (a) { return a.name.toLowerCase().indexOf(f) !== -1; });
+      var grid0 = el('div', 'sm-grid'); list.forEach(function (a) { grid0.appendChild(smItem(a)); }); wrap.appendChild(grid0);
+      if (!list.length) wrap.appendChild(el('div', 'empty', T('No apps match.')));
+      return;
+    }
+    var byCat = {}; list.forEach(function (a) { var c = a.cat || 'Utilities'; (byCat[c] = byCat[c] || []).push(a); });
+    var cats = CAT_ORDER.filter(function (c) { return byCat[c]; });
+    Object.keys(byCat).forEach(function (c) { if (cats.indexOf(c) < 0) cats.push(c); });
+    cats.forEach(function (c) {
+      wrap.appendChild(el('div', 'sm-cat', T(c)));
+      var grid = el('div', 'sm-grid');
+      byCat[c].forEach(function (a) { grid.appendChild(smItem(a)); });
+      wrap.appendChild(grid);
     });
-    if (!list.length) wrap.appendChild(el('div', 'empty', T('No apps match.')));
   }
 
   // ============================================================
@@ -260,21 +295,41 @@
   // ============================================================
   var agents = []; // from /api/agents
 
+  // Catalog of bundled desktop apps. Each is ALSO a skill (skill slug) so the same capability
+  // is available in the classic UI and to the agent. `kind:'native'` = client app; `kind:'agent'`
+  // = opens a task-scoped chat to Zamolxis, which has the skill + shell tools to perform it.
+  var CATALOG = [
+    { id: 'files', name: 'Files', iconSvg: ICON.files, cat: 'Utilities', skill: 'file-manager', kind: 'native' },
+    { id: 'texteditor', name: 'Text Editor', iconSvg: ICON.editor, cat: 'Utilities', skill: 'text-editor', kind: 'native' },
+    { id: 'calculator', name: 'Calculator', iconSvg: ICON.calc, cat: 'Utilities', skill: 'calculator', kind: 'native' },
+    { id: 'imageviewer', name: 'Image Viewer', iconSvg: ICON.image, cat: 'Media', skill: 'image-viewer', kind: 'native' },
+    { id: 'mediaplayer', name: 'Media Player', iconSvg: ICON.film, cat: 'Media', skill: 'video-player', kind: 'native' },
+    { id: 'ebook', name: 'Ebook Reader', iconSvg: ICON.book, cat: 'Media', skill: 'ebook-reader', kind: 'native' },
+    { id: 'pdf', name: 'PDF', iconSvg: ICON.pdf, cat: 'Office', skill: 'pdf-tools', kind: 'native' },
+    { id: 'word', name: 'Word', iconSvg: ICON.doc, cat: 'Office', skill: 'document-viewer', kind: 'native' },
+    { id: 'excel', name: 'Excel', iconSvg: ICON.sheet, cat: 'Office', skill: 'spreadsheet-viewer', kind: 'native' },
+    { id: 'sftp', name: 'SFTP Client', iconSvg: ICON.net, cat: 'Network', skill: 'sftp-client', kind: 'native' },
+    { id: 'telnet', name: 'Telnet', iconSvg: ICON.term, cat: 'Network', skill: 'telnet-client', kind: 'native' },
+    { id: 'messages', name: 'Messages', iconSvg: ICON.chat, cat: 'Communication', skill: 'chat-clients', kind: 'native' }
+  ];
+  var CAT_ORDER = ['System', 'Office', 'Media', 'Network', 'Communication', 'Utilities', 'Agents'];
   function builtinApps() {
     return [
-      { id: 'zamolxis', name: AGENT_NAME, iconSvg: ICON.zamolxis, kind: 'builtin' },
-      { id: 'settings', name: T('Settings'), iconSvg: ICON.settings, kind: 'builtin' },
-      { id: 'newagent', name: T('New Agent'), iconSvg: ICON.newagent, kind: 'builtin' },
-      { id: 'help', name: T('Help'), iconSvg: ICON.help, kind: 'builtin' }
+      { id: 'zamolxis', name: AGENT_NAME, iconSvg: ICON.zamolxis, kind: 'builtin', cat: 'System' },
+      { id: 'settings', name: T('Settings'), iconSvg: ICON.settings, kind: 'builtin', cat: 'System' },
+      { id: 'newagent', name: T('New Agent'), iconSvg: ICON.newagent, kind: 'builtin', cat: 'System' },
+      { id: 'help', name: T('Help'), iconSvg: ICON.help, kind: 'builtin', cat: 'System' }
     ];
   }
   function appList() {
     var out = builtinApps();
+    CATALOG.forEach(function (a) { out.push({ id: a.id, name: T(a.name), iconSvg: a.iconSvg, kind: a.kind, cat: a.cat, skill: a.skill, baseName: a.name }); });
     agents.forEach(function (a) {
-      out.push({ id: 'agent:' + a.name, name: a.label || a.name, iconSvg: agentIconSvg(a.label || a.name), kind: 'agent', agent: a });
+      out.push({ id: 'agent:' + a.name, name: a.label || a.name, iconSvg: agentIconSvg(a.label || a.name), kind: 'agent', cat: 'Agents', agent: a });
     });
     return out;
   }
+  function catalogById(id) { for (var i = 0; i < CATALOG.length; i++) if (CATALOG[i].id === id) return CATALOG[i]; return null; }
   function appById(id) { var l = appList(); for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
 
   // ---------- session persistence (open windows + geometry + state) ----------
@@ -307,6 +362,16 @@
     else if (appId === 'settings') spec = { appId: appId, title: T('Settings'), iconSvg: ICON.settings, w: 620, h: 520, onMount: mountSettings };
     else if (appId === 'newagent') spec = { appId: appId, title: T('New Agent'), iconSvg: ICON.newagent, w: 460, h: 480, onMount: mountNewAgent };
     else if (appId === 'help') spec = { appId: appId, title: T('Help'), iconSvg: ICON.help, w: 720, h: 600, onMount: mountHelp };
+    else if (catalogById(appId)) {
+      var ca = catalogById(appId);
+      if (appId === 'files') spec = { appId: appId, title: T('Files'), iconSvg: ICON.files, w: 760, h: 560, onMount: mountFiles };
+      else if (appId === 'texteditor') spec = { appId: appId, title: T('Text Editor'), iconSvg: ICON.editor, w: 720, h: 560, onMount: function (b, w) { mountTextEditor(b, w, null); } };
+      else if (appId === 'calculator') spec = { appId: appId, title: T('Calculator'), iconSvg: ICON.calc, w: 300, h: 430, onMount: mountCalculator };
+      else if (appId === 'sftp') spec = { appId: appId, title: T('SFTP Client'), iconSvg: ICON.net, w: 820, h: 600, onMount: mountSftp };
+      else if (appId === 'telnet') spec = { appId: appId, title: T('Telnet'), iconSvg: ICON.term, w: 720, h: 520, onMount: mountTelnet };
+      else if (appId === 'messages') spec = { appId: appId, title: T('Messages'), iconSvg: ICON.chat, w: 720, h: 560, onMount: mountMessages };
+      else spec = { appId: appId, title: T(ca.name), iconSvg: ca.iconSvg, w: 780, h: 620, onMount: function (b, w) { mountEmptyViewer(b, w, ca); } };
+    }
     else if (app.kind === 'agent') spec = { appId: appId, title: app.name, iconSvg: app.iconSvg || agentIconSvg(app.name), w: 520, h: 560, onMount: function (b, w) { mountAgent(b, w, app.agent); } };
     if (!spec) return null;
     var w = makeWindow(spec);
@@ -379,7 +444,7 @@
     var inputRow = el('div', 'chat-input');
     var attach = el('button'); attach.textContent = '📎'; attach.title = T('Attach files'); attach.style.cssText = 'padding:0 12px;background:#e5e5e5;border:0;border-radius:8px;cursor:pointer';
     var fileIn = el('input'); fileIn.type = 'file'; fileIn.multiple = true; fileIn.style.display = 'none';
-    var ta = el('textarea'); ta.placeholder = T('Message') + ' ' + AGENT_NAME + '...';
+    var ta = el('textarea'); ta.placeholder = (opts && opts.placeholder ? opts.placeholder : T('Message') + ' ' + AGENT_NAME) + '...';
     var send = el('button'); send.textContent = T('Send');
     inputRow.appendChild(attach); inputRow.appendChild(ta); inputRow.appendChild(send);
     wrap.appendChild(bar); wrap.appendChild(log); wrap.appendChild(chips); wrap.appendChild(inputRow);
@@ -398,7 +463,9 @@
       return c;
     }
     // restore the saved transcript for this conversation
-    loadChatLog(logKey).forEach(function (r) { addMsg(r.who, r.text, r.cls, r.via, false); });
+    var _hist = loadChatLog(logKey);
+    _hist.forEach(function (r) { addMsg(r.who, r.text, r.cls, r.via, false); });
+    if (!_hist.length && opts && opts.intro) addMsg(AGENT_NAME, opts.intro, 'bot', null, false);
 
     // WebSocket
     var proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -995,6 +1062,391 @@
     body.appendChild(wrap);
   }
 
+  // ============================================================
+  // Native file apps: File Manager, Text Editor, Calculator, viewers
+  // ============================================================
+  function fsapi(op, extra) { return api('/api/fs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.assign({ op: op }, extra || {})) }); }
+  function fileUrl(rel, download) { return '/api/file?path=' + encodeURIComponent(rel) + (download ? '&download=1' : ''); }
+  var TEXT_OPEN = /\.(txt|md|markdown|csv|tsv|json|jsonl|ya?ml|xml|html?|js|mjs|cjs|ts|tsx|jsx|py|rb|go|rs|java|kt|c|cc|cpp|h|hpp|cs|php|swift|sh|bash|zsh|ps1|bat|sql|ini|toml|cfg|conf|log|env|tex|rst|gradle|properties)$/i;
+  var IMG_OPEN = /\.(png|jpe?g|gif|webp|bmp|svg|ico)$/i;
+  var AV_OPEN = /\.(mp4|webm|mkv|mov|m4v|ogg|ogv|mp3|wav|m4a|flac|aac|opus)$/i;
+  var DOC_OPEN = /\.(docx?|odt)$/i;
+  var SHEET_OPEN = /\.(xlsx?|ods)$/i;
+  function humanSize(n) { if (n < 1024) return n + ' B'; if (n < 1048576) return (n / 1024).toFixed(1) + ' KB'; if (n < 1073741824) return (n / 1048576).toFixed(1) + ' MB'; return (n / 1073741824).toFixed(2) + ' GB'; }
+  function iconForName(name) { if (IMG_OPEN.test(name)) return ICON.image; if (AV_OPEN.test(name)) return ICON.film; if (/\.pdf$/i.test(name)) return ICON.pdf; if (/\.epub$/i.test(name)) return ICON.book; if (DOC_OPEN.test(name)) return ICON.doc; if (SHEET_OPEN.test(name)) return ICON.sheet; return ICON.editor; }
+  function bytesToB64(bytes) { var bin = ''; var chunk = 0x8000; for (var i = 0; i < bytes.length; i += chunk) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk)); return btoa(bin); }
+  function loadScript(src, cb) {
+    var ex = document.querySelector('script[data-src="' + src + '"]');
+    if (ex) { if (ex.getAttribute('data-loaded') === '1') return cb(true); ex.addEventListener('load', function () { cb(true); }); ex.addEventListener('error', function () { cb(false); }); return; }
+    var s = document.createElement('script'); s.src = src; s.setAttribute('data-src', src);
+    s.onload = function () { s.setAttribute('data-loaded', '1'); cb(true); }; s.onerror = function () { cb(false); };
+    document.head.appendChild(s);
+  }
+  // Open an instance window NOT tied to the singleton registry (so multiple files can be open).
+  function spawnApp(idBase, title, iconSvg, w, h, mountFn) {
+    var inst = makeWindow({ appId: idBase, title: title, iconSvg: iconSvg, w: w, h: h, onMount: mountFn });
+    inst._iconSvg = iconSvg; inst._appTitle = title; syncTaskbar(); return inst;
+  }
+  function openFile(rel) {
+    var name = rel.split('/').pop(); var ext = '.' + (name.split('.').pop() || '').toLowerCase();
+    if (TEXT_OPEN.test(name)) return spawnApp('texteditor:' + rel, name, ICON.editor, 720, 560, function (b, w) { mountTextEditor(b, w, rel); });
+    if (IMG_OPEN.test(name)) return spawnApp('imageviewer:' + rel, name, ICON.image, 780, 620, function (b, w) { mountImageViewer(b, w, rel); });
+    if (AV_OPEN.test(name)) return spawnApp('mediaplayer:' + rel, name, ICON.film, 720, 500, function (b, w) { mountMediaPlayer(b, w, rel); });
+    if (ext === '.pdf') return spawnApp('pdf:' + rel, name, ICON.pdf, 840, 700, function (b, w) { mountPdf(b, w, rel); });
+    if (ext === '.epub') return spawnApp('ebook:' + rel, name, ICON.book, 760, 700, function (b, w) { mountEbook(b, w, rel); });
+    if (DOC_OPEN.test(name)) return spawnApp('word:' + rel, name, ICON.doc, 780, 660, function (b, w) { mountDocViewer(b, w, rel, 'doc'); });
+    if (SHEET_OPEN.test(name)) return spawnApp('excel:' + rel, name, ICON.sheet, 860, 620, function (b, w) { mountDocViewer(b, w, rel, 'sheet'); });
+    window.open(fileUrl(rel, true), '_blank');
+  }
+
+  function mountFiles(body, win) {
+    body.style.padding = '0';
+    var wrap = el('div'); wrap.style.cssText = 'height:100%;display:flex;flex-direction:column;font-size:13px';
+    var bar = el('div'); bar.style.cssText = 'display:flex;gap:6px;align-items:center;padding:8px;border-bottom:1px solid rgba(128,128,128,.2);flex-wrap:wrap';
+    var upBtn = el('button', 'btn ghost', '↰'); upBtn.title = 'Up';
+    var pathInp = el('input', 'inp'); pathInp.style.cssText = 'flex:1;min-width:120px';
+    var refreshBtn = el('button', 'btn ghost', T('Refresh'));
+    var mkdirBtn = el('button', 'btn ghost', T('New folder'));
+    var newFileBtn = el('button', 'btn ghost', T('New file'));
+    var upFileBtn = el('button', 'btn ghost', '📎'); upFileBtn.title = T('Attach files');
+    var fileIn = el('input'); fileIn.type = 'file'; fileIn.multiple = true; fileIn.style.display = 'none';
+    [upBtn, pathInp, refreshBtn, mkdirBtn, newFileBtn, upFileBtn].forEach(function (e) { bar.appendChild(e); });
+    var list = el('div'); list.style.cssText = 'flex:1;overflow:auto;padding:6px';
+    var status = el('div', 'hint'); status.style.cssText = 'padding:4px 8px;border-top:1px solid rgba(128,128,128,.2)';
+    wrap.appendChild(bar); wrap.appendChild(list); wrap.appendChild(status); body.appendChild(wrap); body.appendChild(fileIn);
+    var cur = localStorage.getItem('zx_fm_path') || '';
+    function parent(p) { var i = p.lastIndexOf('/'); return i < 0 ? '' : p.slice(0, i); }
+    function load(p) {
+      fsapi('list', { path: p }).then(function (d) {
+        if (d.error) { status.textContent = d.error; return; }
+        cur = d.path; try { localStorage.setItem('zx_fm_path', cur); } catch (e) {} pathInp.value = '/' + cur;
+        list.innerHTML = '';
+        if (!d.items.length) list.appendChild(el('div', 'hint', T('empty folder')));
+        d.items.forEach(function (it) {
+          var childPath = (cur ? cur + '/' : '') + it.name;
+          var row = el('div', 'fm-row');
+          var ic = el('span', 'fm-ico', it.dir ? ICON.files : iconForName(it.name));
+          var nm = el('span'); nm.textContent = it.name; nm.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+          var meta = el('span', 'hint'); meta.textContent = it.dir ? '' : humanSize(it.size);
+          var act = el('span', 'fm-act');
+          var rn = el('button', 'btn ghost mini', T('Rename'));
+          rn.addEventListener('click', function (e) { e.stopPropagation(); var nn = prompt(T('Rename'), it.name); if (nn && nn !== it.name) fsapi('rename', { path: childPath, to: (cur ? cur + '/' : '') + nn }).then(function () { load(cur); }); });
+          var del = el('button', 'btn ghost mini', T('Delete'));
+          del.addEventListener('click', function (e) { e.stopPropagation(); if (confirm(T('Delete') + ' "' + it.name + '"?')) fsapi('delete', { path: childPath }).then(function () { load(cur); }); });
+          act.appendChild(rn);
+          if (!it.dir) { var dl = el('a', 'btn ghost mini', T('Download')); dl.href = fileUrl(childPath, true); dl.style.cssText = 'text-decoration:none'; act.appendChild(dl); }
+          act.appendChild(del);
+          row.appendChild(ic); row.appendChild(nm); row.appendChild(meta); row.appendChild(act);
+          row.addEventListener('dblclick', function () { if (it.dir) load(childPath); else openFile(childPath); });
+          list.appendChild(row);
+        });
+        status.textContent = d.items.length + ' items · ' + d.root;
+      }).catch(function () { status.textContent = 'error'; });
+    }
+    upBtn.addEventListener('click', function () { load(parent(cur)); });
+    refreshBtn.addEventListener('click', function () { load(cur); });
+    pathInp.addEventListener('keydown', function (e) { if (e.key === 'Enter') load(pathInp.value.replace(/^\/+/, '')); });
+    mkdirBtn.addEventListener('click', function () { var n = prompt(T('New folder')); if (n) fsapi('mkdir', { path: (cur ? cur + '/' : '') + n }).then(function () { load(cur); }); });
+    newFileBtn.addEventListener('click', function () { var n = prompt(T('New file')); if (n) fsapi('write', { path: (cur ? cur + '/' : '') + n, content: '' }).then(function () { load(cur); openFile((cur ? cur + '/' : '') + n); }); });
+    upFileBtn.addEventListener('click', function () { fileIn.click(); });
+    fileIn.addEventListener('change', function () {
+      var arr = [].slice.call(fileIn.files || []); fileIn.value = '';
+      var i = 0; function next() { if (i >= arr.length) { load(cur); return; } var f = arr[i++]; var rd = new FileReader(); rd.onload = function () { var s = String(rd.result || ''); var c = s.indexOf(','); var b64 = c >= 0 ? s.slice(c + 1) : s; fsapi('writeB64', { path: (cur ? cur + '/' : '') + f.name, content: b64 }).then(next).catch(next); }; rd.readAsDataURL(f); }
+      next();
+    });
+    load(cur);
+  }
+
+  function mountTextEditor(body, win, rel) {
+    body.style.padding = '0';
+    var wrap = el('div'); wrap.style.cssText = 'height:100%;display:flex;flex-direction:column';
+    var bar = el('div'); bar.style.cssText = 'display:flex;gap:6px;align-items:center;padding:8px;border-bottom:1px solid rgba(128,128,128,.2)';
+    var saveBtn = el('button', 'btn', T('Save'));
+    var openBtn = el('button', 'btn ghost', T('Open'));
+    var nameSpan = el('span', 'hint'); nameSpan.textContent = rel || T('New file');
+    var status = el('span', 'hint'); status.style.marginLeft = 'auto';
+    bar.appendChild(saveBtn); bar.appendChild(openBtn); bar.appendChild(nameSpan); bar.appendChild(status);
+    var ta = el('textarea'); ta.style.cssText = 'flex:1;border:0;outline:0;resize:none;padding:12px;font:13px/1.5 ui-monospace,Consolas,Menlo,monospace;background:transparent;color:inherit';
+    ta.spellcheck = false; wrap.appendChild(bar); wrap.appendChild(ta); body.appendChild(wrap);
+    var pathRef = rel;
+    if (rel) fsapi('read', { path: rel }).then(function (d) { if (d.error) { status.textContent = d.error; return; } ta.value = d.text; }).catch(function () { status.textContent = 'error'; });
+    openBtn.addEventListener('click', function () { launchApp('files'); });
+    saveBtn.addEventListener('click', function () {
+      if (!pathRef) { var n = prompt(T('New file'), 'untitled.txt'); if (!n) return; pathRef = n; nameSpan.textContent = pathRef; }
+      saveBtn.disabled = true; status.textContent = T('Saving...');
+      fsapi('write', { path: pathRef, content: ta.value }).then(function (d) { saveBtn.disabled = false; status.textContent = d.error ? d.error : T('Saved.'); }).catch(function () { saveBtn.disabled = false; status.textContent = T('Failed.'); });
+    });
+  }
+
+  function mountCalculator(body, win) {
+    var pad = el('div'); pad.style.cssText = 'height:100%;display:flex;flex-direction:column;padding:10px;gap:8px';
+    var disp = el('input', 'inp'); disp.style.cssText = 'width:100%;height:48px;text-align:right;font-size:22px'; disp.readOnly = true; disp.value = '0';
+    pad.appendChild(disp);
+    var grid = el('div'); grid.style.cssText = 'flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:8px';
+    var expr = '';
+    function setd() { disp.value = expr || '0'; }
+    function evalExpr(s) { if (!/^[-+*/().\d\s]+$/.test(s)) throw 0; return Function('"use strict";return (' + s + ')')(); }
+    ['C', '(', ')', '/', '7', '8', '9', '*', '4', '5', '6', '-', '1', '2', '3', '+', '0', '.', '=', '⌫'].forEach(function (k) {
+      var b = el('button', 'btn ghost', k); b.style.cssText = 'font-size:17px;height:100%';
+      if (k === '=') b.className = 'btn';
+      b.addEventListener('click', function () {
+        if (k === 'C') { expr = ''; return setd(); }
+        if (k === '⌫') { expr = expr.slice(0, -1); return setd(); }
+        if (k === '=') { try { var v = evalExpr(expr); expr = String(v); } catch (e) { expr = 'Error'; } return setd(); }
+        if (expr === 'Error') expr = '';
+        expr += k; setd();
+      });
+      grid.appendChild(b);
+    });
+    pad.appendChild(grid); body.appendChild(pad);
+  }
+
+  function mountEmptyViewer(body, win, ca) {
+    var pad = el('div', 'app-pad'); pad.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;height:100%;text-align:center';
+    var ic = el('div', null, ca.iconSvg); ic.style.cssText = 'width:54px;height:54px;opacity:.75';
+    pad.appendChild(ic);
+    pad.appendChild(el('div', 'hint', T('No file open')));
+    var b = el('button', 'btn', T('Open from File Manager'));
+    b.addEventListener('click', function () { launchApp('files'); });
+    pad.appendChild(b); body.appendChild(pad);
+  }
+
+  function mountImageViewer(body, win, rel) {
+    body.style.padding = '0';
+    var wrap = el('div'); wrap.style.cssText = 'height:100%;display:flex;flex-direction:column;background:#1c1c1c';
+    var img = el('img'); img.src = fileUrl(rel); img.style.cssText = 'flex:1;min-height:0;object-fit:contain';
+    var bar = el('div'); bar.style.cssText = 'display:flex;gap:8px;padding:6px 10px;background:#262626;color:#ccc;font-size:12px;align-items:center';
+    bar.appendChild(el('span', null, rel.split('/').pop())); var sp = el('div'); sp.style.flex = '1'; bar.appendChild(sp);
+    var dl = el('a', 'btn ghost', T('Download')); dl.href = fileUrl(rel, true); dl.style.cssText = 'text-decoration:none;color:#ccc'; bar.appendChild(dl);
+    wrap.appendChild(img); wrap.appendChild(bar); body.appendChild(wrap);
+  }
+
+  function mountMediaPlayer(body, win, rel) {
+    body.style.padding = '0';
+    var isAudio = /\.(mp3|wav|m4a|flac|aac|opus)$/i.test(rel);
+    var wrap = el('div'); wrap.style.cssText = 'height:100%;display:flex;flex-direction:column;background:#0e0e0e;align-items:center;justify-content:center;gap:12px';
+    if (isAudio) { var t = el('div'); t.style.cssText = 'color:#ccc'; t.textContent = rel.split('/').pop(); wrap.appendChild(t); }
+    var media = el(isAudio ? 'audio' : 'video'); media.src = fileUrl(rel); media.controls = true; media.autoplay = false;
+    media.style.cssText = isAudio ? 'width:90%' : 'max-width:100%;max-height:100%';
+    wrap.appendChild(media); body.appendChild(wrap);
+  }
+
+  function mountEbook(body, win, rel) {
+    if (/\.pdf$/i.test(rel)) return mountPdf(body, win, rel);
+    body.style.padding = '0';
+    var wrap = el('div'); wrap.style.cssText = 'height:100%;display:flex;flex-direction:column';
+    var area = el('div'); area.style.cssText = 'flex:1;min-height:0;background:#fff';
+    var nav = el('div'); nav.style.cssText = 'display:flex;gap:8px;justify-content:center;padding:6px;border-top:1px solid rgba(128,128,128,.2)';
+    var prev = el('button', 'btn ghost', '‹ '); var next = el('button', 'btn ghost', ' ›');
+    nav.appendChild(prev); nav.appendChild(next); wrap.appendChild(area); wrap.appendChild(nav); body.appendChild(wrap);
+    area.appendChild(el('div', 'hint', T('Loading...')));
+    loadScript('https://cdn.jsdelivr.net/npm/jszip/dist/jszip.min.js', function () {
+      loadScript('https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js', function (ok) {
+        area.innerHTML = '';
+        if (!ok || !window.ePub) { area.appendChild(el('div', 'hint', T('Could not open.') + ' (epub.js)')); return; }
+        try {
+          var book = window.ePub(fileUrl(rel));
+          var rendition = book.renderTo(area, { width: '100%', height: '100%', flow: 'paginated', spread: 'none' });
+          rendition.display();
+          prev.addEventListener('click', function () { rendition.prev(); });
+          next.addEventListener('click', function () { rendition.next(); });
+        } catch (e) { area.appendChild(el('div', 'hint', T('Could not open.'))); }
+      });
+    });
+  }
+
+  // PDF: native viewer (embed) + real editing via pdf-lib (rotate, delete page, save a new file).
+  function mountPdf(body, win, rel) {
+    body.style.padding = '0';
+    var wrap = el('div'); wrap.style.cssText = 'height:100%;display:flex;flex-direction:column';
+    var bar = el('div'); bar.style.cssText = 'display:flex;gap:6px;padding:6px 10px;border-bottom:1px solid rgba(128,128,128,.2);align-items:center;font-size:12px;flex-wrap:wrap';
+    bar.appendChild(el('span', null, rel.split('/').pop())); var sp = el('div'); sp.style.flex = '1'; bar.appendChild(sp);
+    var rotBtn = el('button', 'btn ghost', '⟳ ' + T('Rotate'));
+    var delBtn = el('button', 'btn ghost', T('Delete page'));
+    var saveBtn = el('button', 'btn', T('Save as new file'));
+    var dl = el('a', 'btn ghost', T('Download')); dl.href = fileUrl(rel, true); dl.style.cssText = 'text-decoration:none;line-height:26px';
+    var msg = el('span', 'hint');
+    [rotBtn, delBtn, saveBtn, dl, msg].forEach(function (e) { bar.appendChild(e); });
+    var emb = el('embed'); emb.type = 'application/pdf'; emb.src = fileUrl(rel); emb.style.cssText = 'flex:1;width:100%';
+    wrap.appendChild(bar); wrap.appendChild(emb); body.appendChild(wrap);
+    var pdfDoc = null, dirty = false;
+    function ensureLib(cb) {
+      if (window.PDFLib) return cb(true);
+      msg.textContent = 'Loading editor...';
+      loadScript('https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js', function (ok) { msg.textContent = ''; cb(ok && !!window.PDFLib); });
+    }
+    function ensureDoc(cb) {
+      if (pdfDoc) return cb();
+      ensureLib(function (ok) {
+        if (!ok) { msg.textContent = T('Could not open.'); return; }
+        fetch(fileUrl(rel)).then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
+          window.PDFLib.PDFDocument.load(buf).then(function (d) { pdfDoc = d; cb(); }).catch(function () { msg.textContent = T('Could not open.'); });
+        });
+      });
+    }
+    rotBtn.addEventListener('click', function () { ensureDoc(function () { pdfDoc.getPages().forEach(function (p) { p.setRotation(window.PDFLib.degrees((p.getRotation().angle + 90) % 360)); }); dirty = true; msg.textContent = 'Rotated (unsaved)'; }); });
+    delBtn.addEventListener('click', function () { ensureDoc(function () { var n = parseInt(prompt('Delete which page? (1-' + pdfDoc.getPageCount() + ')'), 10); if (!n || n < 1 || n > pdfDoc.getPageCount()) return; pdfDoc.removePage(n - 1); dirty = true; msg.textContent = 'Page ' + n + ' removed (unsaved)'; }); });
+    saveBtn.addEventListener('click', function () {
+      ensureDoc(function () {
+        var out = rel.replace(/\.pdf$/i, '') + '-edited.pdf';
+        msg.textContent = T('Saving...');
+        pdfDoc.save().then(function (bytes) { return fsapi('writeB64', { path: out, content: bytesToB64(bytes) }); }).then(function (d) { msg.textContent = d && d.error ? d.error : (T('Saved.') + ' ' + out); dirty = false; }).catch(function () { msg.textContent = T('Failed.'); });
+      });
+    });
+  }
+
+  // Document viewer/editor: Word (render via mammoth, edit + save back to .docx) and
+  // Excel (render via SheetJS server-side, edit cells + save back to .xlsx client-side).
+  function mountDocViewer(body, win, rel, kind) {
+    body.style.padding = '0';
+    var wrap = el('div'); wrap.style.cssText = 'height:100%;display:flex;flex-direction:column';
+    var bar = el('div'); bar.style.cssText = 'display:flex;gap:6px;padding:6px 10px;border-bottom:1px solid rgba(128,128,128,.2);align-items:center;font-size:12px;flex-wrap:wrap';
+    bar.appendChild(el('span', null, rel.split('/').pop())); var sp = el('div'); sp.style.flex = '1'; bar.appendChild(sp);
+    var editBtn = el('button', 'btn ghost', T('Edit'));
+    var saveBtn = el('button', 'btn', T('Save')); saveBtn.style.display = 'none';
+    var dl = el('a', 'btn ghost', T('Download')); dl.href = fileUrl(rel, true); dl.style.cssText = 'text-decoration:none;line-height:26px';
+    var msg = el('span', 'hint');
+    [editBtn, saveBtn, dl, msg].forEach(function (e) { bar.appendChild(e); });
+    var content = el('div'); content.style.cssText = 'flex:1;overflow:auto;padding:16px;background:#fff;color:#111';
+    content.appendChild(el('div', 'hint', T('Loading...')));
+    wrap.appendChild(bar); wrap.appendChild(content); body.appendChild(wrap);
+    var editing = false;
+    api('/api/docview?path=' + encodeURIComponent(rel)).then(function (d) {
+      content.innerHTML = '';
+      if (d.error) { content.appendChild(el('div', 'hint', d.error)); editBtn.style.display = 'none'; return; }
+      if (d.kind === 'doc') { var box = el('div', 'docview-doc'); box.innerHTML = d.html; content.appendChild(box); win._docBox = box; }
+      else if (d.kind === 'sheet') { d.sheets.forEach(function (sh) { content.appendChild(el('h3', null, sh.name)); var b2 = el('div', 'docview-sheet'); b2.innerHTML = sh.html; content.appendChild(b2); }); }
+    }).catch(function () { content.innerHTML = ''; content.appendChild(el('div', 'hint', T('Could not open.'))); });
+    editBtn.addEventListener('click', function () {
+      editing = !editing;
+      var targets = content.querySelectorAll(kind === 'sheet' ? 'table' : '.docview-doc');
+      Array.prototype.forEach.call(targets, function (t) { t.setAttribute('contenteditable', editing ? 'true' : 'false'); t.style.outline = editing ? '1px dashed #3a7bd5' : ''; });
+      editBtn.textContent = editing ? T('Close') : T('Edit'); saveBtn.style.display = editing ? '' : 'none';
+    });
+    saveBtn.addEventListener('click', function () {
+      msg.textContent = T('Saving...'); saveBtn.disabled = true;
+      if (kind === 'doc') {
+        var html = (content.querySelector('.docview-doc') || {}).innerHTML || '';
+        api('/api/docwrite', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: rel, html: html }) })
+          .then(function (d) { saveBtn.disabled = false; msg.textContent = d && d.error ? d.error : (T('Saved.') + (d.path ? ' ' + d.path : '')); }).catch(function () { saveBtn.disabled = false; msg.textContent = T('Failed.'); });
+      } else {
+        loadScript('https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js', function (ok) {
+          if (!ok || !window.XLSX) { saveBtn.disabled = false; msg.textContent = T('Failed.'); return; }
+          try {
+            var wb = window.XLSX.utils.book_new();
+            var tables = content.querySelectorAll('table'); var hs = content.querySelectorAll('h3');
+            Array.prototype.forEach.call(tables, function (tb, i) { var ws = window.XLSX.utils.table_to_sheet(tb); var nm = (hs[i] && hs[i].textContent || ('Sheet' + (i + 1))).slice(0, 31); window.XLSX.utils.book_append_sheet(wb, ws, nm); });
+            var out = rel.replace(/\.(xlsx?|ods)$/i, '') + '-edited.xlsx';
+            var b64 = window.XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+            fsapi('writeB64', { path: out, content: b64 }).then(function (d) { saveBtn.disabled = false; msg.textContent = d && d.error ? d.error : (T('Saved.') + ' ' + out); }).catch(function () { saveBtn.disabled = false; msg.textContent = T('Failed.'); });
+          } catch (e) { saveBtn.disabled = false; msg.textContent = T('Failed.'); }
+        });
+      }
+    });
+  }
+
+  // Telnet / raw-TCP terminal over the /telnet WebSocket bridge.
+  function mountTelnet(body, win) {
+    body.style.padding = '0';
+    var wrap = el('div'); wrap.style.cssText = 'height:100%;display:flex;flex-direction:column';
+    var bar = el('div'); bar.style.cssText = 'display:flex;gap:6px;padding:8px;border-bottom:1px solid rgba(128,128,128,.2);align-items:center;flex-wrap:wrap';
+    var host = el('input', 'inp'); host.placeholder = 'host'; host.style.flex = '1';
+    var port = el('input', 'inp'); port.placeholder = '23'; port.value = '23'; port.style.width = '70px';
+    var connBtn = el('button', 'btn', 'Connect');
+    bar.appendChild(host); bar.appendChild(port); bar.appendChild(connBtn);
+    var term = el('div'); term.style.cssText = 'flex:1;overflow:auto;background:#0b0b0b;color:#cfffd0;font:13px/1.45 ui-monospace,Consolas,Menlo,monospace;padding:10px;white-space:pre-wrap;word-break:break-all';
+    var inp = el('input', 'inp'); inp.placeholder = 'type a line and press Enter'; inp.disabled = true; inp.style.cssText = 'border:0;border-top:1px solid rgba(128,128,128,.2);border-radius:0';
+    wrap.appendChild(bar); wrap.appendChild(term); wrap.appendChild(inp); body.appendChild(wrap);
+    var sock = null;
+    function append(s) { term.appendChild(document.createTextNode(s)); term.scrollTop = term.scrollHeight; }
+    function connect() {
+      if (!host.value.trim()) return;
+      var proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      sock = new WebSocket(proto + '://' + location.host + '/telnet?host=' + encodeURIComponent(host.value.trim()) + '&port=' + encodeURIComponent(port.value || '23') + '&token=');
+      sock.binaryType = 'arraybuffer';
+      sock.onopen = function () { inp.disabled = false; connBtn.textContent = 'Disconnect'; inp.focus(); };
+      sock.onmessage = function (ev) { append(typeof ev.data === 'string' ? ev.data : new TextDecoder('latin1').decode(new Uint8Array(ev.data))); };
+      sock.onclose = function () { inp.disabled = true; connBtn.textContent = 'Connect'; sock = null; };
+      sock.onerror = function () { append('\n[connection error]\n'); };
+    }
+    connBtn.addEventListener('click', function () { if (sock) { try { sock.close(); } catch (e) {} } else connect(); });
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); if (sock && sock.readyState === 1) { sock.send(inp.value + '\r\n'); append(inp.value + '\n'); } inp.value = ''; } });
+    win.cleanup.push(function () { if (sock) { try { sock.close(); } catch (e) {} } });
+  }
+
+  // SFTP client: real SSH/SFTP sessions via the /api/sftp backend (ssh2). Browse, download, upload, manage.
+  function mountSftp(body, win) {
+    body.style.padding = '0';
+    var wrap = el('div'); wrap.style.cssText = 'height:100%;display:flex;flex-direction:column;font-size:13px';
+    var form = el('div'); form.style.cssText = 'display:flex;gap:6px;padding:8px;border-bottom:1px solid rgba(128,128,128,.2);flex-wrap:wrap;align-items:center';
+    var host = el('input', 'inp'); host.placeholder = 'host'; host.style.flex = '2';
+    var port = el('input', 'inp'); port.placeholder = '22'; port.value = '22'; port.style.width = '56px';
+    var user = el('input', 'inp'); user.placeholder = 'username'; user.style.flex = '1';
+    var pass = el('input', 'inp'); pass.type = 'password'; pass.placeholder = 'password'; pass.style.flex = '1';
+    var connBtn = el('button', 'btn', 'Connect');
+    [host, port, user, pass, connBtn].forEach(function (e) { form.appendChild(e); });
+    var bar = el('div'); bar.style.cssText = 'display:none;gap:6px;padding:6px 8px;border-bottom:1px solid rgba(128,128,128,.2);align-items:center;flex-wrap:wrap';
+    var upBtn = el('button', 'btn ghost', '↰'); var pathInp = el('input', 'inp'); pathInp.style.flex = '1';
+    var refBtn = el('button', 'btn ghost', T('Refresh')); var mkBtn = el('button', 'btn ghost', T('New folder')); var ulBtn = el('button', 'btn ghost', '📎'); var dcBtn = el('button', 'btn ghost', 'Disconnect');
+    var fileIn = el('input'); fileIn.type = 'file'; fileIn.style.display = 'none';
+    [upBtn, pathInp, refBtn, mkBtn, ulBtn, dcBtn].forEach(function (e) { bar.appendChild(e); });
+    var list = el('div'); list.style.cssText = 'flex:1;overflow:auto;padding:6px';
+    var status = el('div', 'hint'); status.style.cssText = 'padding:4px 8px;border-top:1px solid rgba(128,128,128,.2)';
+    wrap.appendChild(form); wrap.appendChild(bar); wrap.appendChild(list); wrap.appendChild(status); body.appendChild(wrap); body.appendChild(fileIn);
+    var sid = null, cur = '.';
+    function sapi(op, extra) { return api('/api/sftp', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.assign({ op: op, sessionId: sid }, extra || {})) }); }
+    function parent(p) { if (p === '/' || p === '.' || p === '') return p; var q = p.replace(/\/+$/, ''); var i = q.lastIndexOf('/'); return i <= 0 ? '/' : q.slice(0, i); }
+    function join(p, n) { if (p === '.') return n; return (p === '/' ? '' : p.replace(/\/+$/, '')) + '/' + n; }
+    function load(p) {
+      status.textContent = '...'; sapi('list', { path: p }).then(function (d) {
+        if (d.error) { status.textContent = d.error; return; }
+        cur = p; pathInp.value = p; list.innerHTML = '';
+        d.items.forEach(function (it) {
+          var full = join(p, it.name);
+          var row = el('div', 'fm-row');
+          var ic = el('span', 'fm-ico', it.dir ? ICON.files : iconForName(it.name));
+          var nm = el('span'); nm.textContent = it.name; nm.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+          var meta = el('span', 'hint'); meta.textContent = it.dir ? '' : humanSize(it.size);
+          var act = el('span', 'fm-act');
+          if (!it.dir) { var dl = el('button', 'btn ghost mini', T('Download')); dl.addEventListener('click', function (e) { e.stopPropagation(); status.textContent = '...'; sapi('read', { path: full }).then(function (r) { if (r.error) { status.textContent = r.error; return; } var a = document.createElement('a'); a.href = 'data:application/octet-stream;base64,' + r.b64; a.download = it.name; a.click(); status.textContent = 'downloaded ' + it.name; }); }); act.appendChild(dl); }
+          var rn = el('button', 'btn ghost mini', T('Rename')); rn.addEventListener('click', function (e) { e.stopPropagation(); var nn = prompt(T('Rename'), it.name); if (nn && nn !== it.name) sapi('rename', { path: full, to: join(parent(full) === full ? cur : parent(full), nn) }).then(function () { load(cur); }); }); act.appendChild(rn);
+          var del = el('button', 'btn ghost mini', T('Delete')); del.addEventListener('click', function (e) { e.stopPropagation(); if (confirm(T('Delete') + ' "' + it.name + '"?')) sapi('delete', { path: full }).then(function () { load(cur); }); }); act.appendChild(del);
+          row.appendChild(ic); row.appendChild(nm); row.appendChild(meta); row.appendChild(act);
+          row.addEventListener('dblclick', function () { if (it.dir) load(full); });
+          list.appendChild(row);
+        });
+        status.textContent = d.items.length + ' items · ' + p;
+      }).catch(function () { status.textContent = 'error'; });
+    }
+    connBtn.addEventListener('click', function () {
+      if (sid) return; connBtn.disabled = true; status.textContent = 'connecting...';
+      sapi('connect', { host: host.value.trim(), port: port.value || '22', username: user.value.trim(), password: pass.value }).then(function (d) {
+        connBtn.disabled = false; if (d.error) { status.textContent = d.error; return; }
+        sid = d.sessionId; pass.value = ''; form.style.display = 'none'; bar.style.display = 'flex'; load('.');
+      }).catch(function () { connBtn.disabled = false; status.textContent = 'connect failed'; });
+    });
+    upBtn.addEventListener('click', function () { load(parent(cur)); });
+    refBtn.addEventListener('click', function () { load(cur); });
+    pathInp.addEventListener('keydown', function (e) { if (e.key === 'Enter') load(pathInp.value); });
+    mkBtn.addEventListener('click', function () { var n = prompt(T('New folder')); if (n) sapi('mkdir', { path: join(cur, n) }).then(function () { load(cur); }); });
+    ulBtn.addEventListener('click', function () { fileIn.click(); });
+    fileIn.addEventListener('change', function () { var f = (fileIn.files || [])[0]; fileIn.value = ''; if (!f) return; var rd = new FileReader(); rd.onload = function () { var s = String(rd.result || ''); var c = s.indexOf(','); var b64 = c >= 0 ? s.slice(c + 1) : s; status.textContent = 'uploading...'; sapi('write', { path: join(cur, f.name), content: b64 }).then(function () { load(cur); }); }; rd.readAsDataURL(f); });
+    dcBtn.addEventListener('click', function () { if (sid) sapi('disconnect', {}); sid = null; bar.style.display = 'none'; form.style.display = 'flex'; list.innerHTML = ''; status.textContent = ''; });
+    win.cleanup.push(function () { if (sid) sapi('disconnect', {}); });
+  }
+
+  // Messages: the cross-channel conversation. Bound to the bridged "main" chat, so messages from
+  // every connected messaging channel arrive here and replies go back out to them.
+  function mountMessages(body, win) {
+    body.style.padding = '0';
+    var wrap = el('div'); wrap.style.cssText = 'height:100%;display:flex;flex-direction:column';
+    var head = el('div'); head.style.cssText = 'padding:6px 10px;border-bottom:1px solid rgba(128,128,128,.2)';
+    head.appendChild(el('div', 'hint', 'Connected messaging channels relay here — reply to respond on all of them.'));
+    var holder = el('div'); holder.style.cssText = 'flex:1;min-height:0;display:flex;flex-direction:column';
+    wrap.appendChild(head); wrap.appendChild(holder); body.appendChild(wrap);
+    buildChat(holder, win, 'main', { route: true });
+  }
+
   // ---------- per-app chat-window setting (the "is chat needed?" toggle) ----------
   function appChatEnabled(appId, def) { var v = localStorage.getItem('zx_chat_' + appId); return v === null ? !!def : v === '1'; }
   function setAppChat(appId, on) { localStorage.setItem('zx_chat_' + appId, on ? '1' : '0'); }
@@ -1182,8 +1634,17 @@
 
   $('#start-btn').addEventListener('click', function (e) { e.stopPropagation(); toggleStart(); });
   $('#start-search-input').addEventListener('input', function () { renderStart(this.value); });
+  // OS.js-style application menu launcher on the top bar (macOS / Ubuntu) — opens the same categorized menu.
+  (function () {
+    var left = document.getElementById('topbar-left');
+    if (left && !document.getElementById('apps-btn')) {
+      var ab = el('button', null, T('Apps')); ab.id = 'apps-btn'; ab.title = T('All apps');
+      ab.addEventListener('click', function (e) { e.stopPropagation(); toggleStart(); });
+      left.appendChild(ab);
+    }
+  })();
   document.addEventListener('click', function (e) {
-    if (!e.target.closest('#startmenu') && !e.target.closest('#start-btn')) closeStart();
+    if (!e.target.closest('#startmenu') && !e.target.closest('#start-btn') && !e.target.closest('#apps-btn')) closeStart();
     if (!e.target.closest('.desk-icon') && selectedIcon) { selectedIcon.classList.remove('selected'); selectedIcon = null; }
   });
   $('#clock').addEventListener('click', function () { launchApp('settings'); });
