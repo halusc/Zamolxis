@@ -53,7 +53,6 @@ const CRED_FIELDS: Array<{ key: string; label: string; group: string; secret: bo
   { key: 'DEEPSEEK_API_KEY', label: 'DeepSeek key (paid, very cheap)', group: 'providers', secret: true },
   { key: 'NVIDIA_API_KEY', label: 'NVIDIA NIM key (free cloud tier — build.nvidia.com)', group: 'providers', secret: true },
   { key: 'SAMBANOVA_API_KEY', label: 'SambaNova key (free fast cloud tier)', group: 'providers', secret: true },
-  { key: 'GITHUB_MODELS_TOKEN', label: 'GitHub Models token (free GPT-4o/4.1 via a GitHub PAT)', group: 'providers', secret: true },
   { key: 'PERPLEXITY_API_KEY', label: 'Perplexity Sonar key (PAID: search-grounded; not a free tier)', group: 'providers', secret: true },
 ];
 
