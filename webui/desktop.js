@@ -411,9 +411,11 @@
       var base = (t || '') + (inj.length ? ((t ? '\n\n' : '') + inj.join('\n\n')) : '');
       if (!upl.length) { sock.send(JSON.stringify({ text: base || '(see attached content)', route: sel.value })); return; }
       stat.textContent = 'uploading...';
-      Promise.all(upl.map(function (f) { return api('/api/upload', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chatId: cid, name: f.name, contentB64: f.b64 }) }).then(function (d) { return d && d.path ? d.path : null; }).catch(function () { return null; }); })).then(function (ps) {
-        var paths = ps.filter(Boolean);
-        var note = base + ((base && paths.length) ? '\n\n' : '') + (paths.length ? ('Attached file(s) - read them with your tools to answer:\n' + paths.map(function (p) { return '- ' + p; }).join('\n')) : '');
+      Promise.all(upl.map(function (f) { return api('/api/upload', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chatId: cid, name: f.name, contentB64: f.b64 }) }).then(function (d) { return d || null; }).catch(function () { return null; }); })).then(function (rs) {
+        var docTexts = [], paths = [];
+        rs.filter(Boolean).forEach(function (x) { if (x.text) { docTexts.push('----- ' + (x.name || 'file') + ' -----\n' + x.text + '\n-----'); } else if (x.path) { paths.push(x.path); } });
+        var body2 = base + (docTexts.length ? ((base ? '\n\n' : '') + docTexts.join('\n\n')) : '');
+        var note = body2 + ((body2 && paths.length) ? '\n\n' : '') + (paths.length ? ('Attached file(s) - read them with your tools to answer:\n' + paths.map(function (p) { return '- ' + p; }).join('\n')) : '');
         stat.textContent = 'thinking...'; sock.send(JSON.stringify({ text: note, route: paths.length ? 'claude' : sel.value }));
       });
     }

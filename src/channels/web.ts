@@ -16,6 +16,7 @@ import type { SkillsManager } from '../skills/manager.js';
 import type { MemoryManager } from '../core/memory.js';
 import type { AgentStore } from '../core/agents.js';
 import { packSetup, type PackParts } from '../core/pack.js';
+import { extractDocText } from '../core/extract.js';
 import { autostartStatus, setAutostart } from '../core/autostart.js';
 import { oauthExpiry } from '../core/auth.js';
 import { effectiveName, tempName } from '../core/displayName.js';
@@ -538,7 +539,7 @@ export class WebChannel implements Channel {
           req.destroy();
         }
       });
-      req.on('end', () => {
+      req.on('end', async () => {
         if (tooBig) return this.json(res, 413, { error: 'file too large (25 MB max)' });
         try {
           const o = JSON.parse(body || '{}');
@@ -553,7 +554,12 @@ export class WebChannel implements Channel {
           const dest = path.join(dir, `${Date.now()}-${safeName}`);
           fs.writeFileSync(dest, buf);
           logger.info({ dest, bytes: buf.length }, 'web upload saved');
-          return this.json(res, 200, { ok: true, path: dest, name: safeName, bytes: buf.length });
+          // Extract text from documents (pdf/docx/xlsx/pptx) so ANY model can read them; the client
+          // injects this text and routes by choice. null => image/binary => client uses Claude's file tools.
+          let text: string | null = null;
+          try { text = await extractDocText(dest, safeName); } catch { text = null; }
+          if (text && text.length > 100000) text = text.slice(0, 100000) + '\n...[truncated]';
+          return this.json(res, 200, { ok: true, path: dest, name: safeName, bytes: buf.length, text: text || undefined });
         } catch (err) {
           return this.json(res, 400, { error: String(err) });
         }
@@ -1467,10 +1473,12 @@ function sendMsg(){var t=el('in').value.trim();var files=pending.slice();if(!t&&
   if(!up.length){clearAttach();finish(base||'(see attached content)',curRoute());return}
   setStatus('uploading...');clearAttach();
   Promise.all(up.map(function(f){return fetch('/api/upload',{method:'POST',headers:hdrs(),body:JSON.stringify({chatId:cid,name:f.name,contentB64:f.b64})}).then(function(r){return r.ok?r.json():null})})).then(function(rs){
-    var paths=rs.filter(Boolean).map(function(x){return x.path});
-    if(!paths.length&&!inj.length){setStatus('upload failed');if(cur){cur.textContent='(upload failed)'}return}
-    var note=base+((base&&paths.length)?'\\n\\n':'')+(paths.length?('Attached file(s) - read them with your tools to answer:\\n'+paths.map(function(p){return '- '+p}).join('\\n')):'');
-    finish(note,'claude');
+    var docTexts=[],paths=[];
+    rs.filter(Boolean).forEach(function(x){if(x.text){docTexts.push('----- '+(x.name||'file')+' -----\\n'+x.text+'\\n-----')}else if(x.path){paths.push(x.path)}});
+    if(!paths.length&&!inj.length&&!docTexts.length){setStatus('upload failed');if(cur){cur.textContent='(upload failed)'}return}
+    var body2=base+(docTexts.length?((base?'\\n\\n':'')+docTexts.join('\\n\\n')):'');
+    var note=body2+((body2&&paths.length)?'\\n\\n':'')+(paths.length?('Attached file(s) - read them with your tools to answer:\\n'+paths.map(function(p){return '- '+p}).join('\\n')):'');
+    finish(note, paths.length?'claude':curRoute());
   }).catch(function(){setStatus('upload failed');if(cur){cur.textContent='(upload failed)'}})}
 el('route').onchange=function(){routes[cid]=el('route').value;localStorage.zx_routes=JSON.stringify(routes);updateModelVis()};applyRoute();
 el('model').onchange=function(){models[cid]=el('model').value;localStorage.zx_models=JSON.stringify(models)};applyModel();
