@@ -387,3 +387,21 @@ body[data-os="win"] #apps-btn { display: none; }
 body[data-os="win"] #taskbar { justify-content: flex-start; }
 body[data-os="win"] #taskbar-center { margin-left: 4px; }
 body[data-os="win"] #startmenu { left: 8px; transform: none; bottom: calc(var(--tb-h) + 8px); height: 560px; max-height: 80vh; }
+
+/* ===== Application menu bars (in-window on Win/Ubuntu, global on macOS) ===== */
+.menubar { display: flex; align-items: stretch; height: 26px; flex: 0 0 26px; padding: 0 4px; background: rgba(0,0,0,.03); border-bottom: 1px solid rgba(0,0,0,.07); }
+.menu-btn { border: 0; background: transparent; font: 12.5px var(--font); color: inherit; padding: 0 9px; cursor: default; border-radius: 4px; }
+.menu-btn:hover, .menu-btn.open { background: rgba(0,0,0,.08); }
+body[data-mode="dark"] .menubar { background: rgba(255,255,255,.04); border-bottom-color: rgba(255,255,255,.08); }
+body[data-mode="dark"] .menu-btn:hover { background: rgba(255,255,255,.12); }
+#mac-menus { display: none; align-items: center; gap: 2px; margin-left: 6px; }
+#mac-menus .menu-btn { font-weight: 600; padding: 0 8px; height: 20px; line-height: 20px; border-radius: 4px; }
+.menu-dd { position: fixed; z-index: 99999; min-width: 184px; background: #fff; color: #1b1b1b; border: 1px solid rgba(0,0,0,.14); border-radius: 8px; box-shadow: 0 12px 34px rgba(0,0,0,.28); padding: 5px; }
+body[data-mode="dark"] .menu-dd { background: #2a2a2a; color: #eaeaea; border-color: rgba(255,255,255,.12); }
+.menu-item { display: flex; justify-content: space-between; gap: 24px; align-items: center; padding: 6px 10px; border-radius: 5px; font-size: 13px; cursor: default; }
+.menu-item:hover { background: var(--accent); color: #fff; }
+.menu-item.disabled { opacity: .4; pointer-events: none; }
+.menu-accel { font-size: 11px; opacity: .6; }
+.menu-item:hover .menu-accel { opacity: .85; }
+.menu-sep { height: 1px; background: rgba(0,0,0,.12); margin: 4px 6px; }
+body[data-mode="dark"] .menu-sep { background: rgba(255,255,255,.14); }

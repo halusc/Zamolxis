@@ -253,6 +253,12 @@ export class WebChannel implements Channel {
       capabilities: () => string[];
       models: () => string[];
     },
+    /** Messages client: list connected messaging channels. */
+    private readonly listChannels?: () => Array<{ name: string; running: boolean }>,
+    /** Messages client: recent messages for a channel. */
+    private readonly channelMessages?: (channel: string) => Array<{ chatId: string; from?: string; dir: string; text: string; ts: number }>,
+    /** Messages client: send a message out through a channel. */
+    private readonly sendToChannel?: (channel: string, chatId: string, text: string) => Promise<{ ok: boolean; error?: string }>,
   ) {
     const { bind, authToken } = config.web;
     if (!LOOPBACK.includes(bind) && !authToken) {
@@ -931,6 +937,30 @@ export class WebChannel implements Channel {
       if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
       const since = Number(url.searchParams.get('since') || 0) || 0;
       return this.json(res, 200, (this.agentMsgs ?? []).filter((m) => m.ts > since).slice(-100));
+    }
+    // Messages client: connected channels, their message history, and outbound send.
+    if (url.pathname === '/api/channels' && req.method === 'GET') {
+      if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
+      return this.json(res, 200, { channels: this.listChannels ? this.listChannels() : [] });
+    }
+    if (url.pathname === '/api/channels/messages' && req.method === 'GET') {
+      if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
+      const ch = url.searchParams.get('channel') || '';
+      return this.json(res, 200, { messages: this.channelMessages ? this.channelMessages(ch) : [] });
+    }
+    if (url.pathname === '/api/channels/send' && req.method === 'POST') {
+      if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
+      let body = '';
+      req.on('data', (c) => { body += c; });
+      req.on('end', async () => {
+        try {
+          const o = JSON.parse(body || '{}');
+          if (!this.sendToChannel) return this.json(res, 200, { ok: false, error: 'unavailable' });
+          const r = await this.sendToChannel(String(o.channel || ''), String(o.chatId || ''), String(o.text || ''));
+          return this.json(res, 200, r);
+        } catch (err) { return this.json(res, 400, { error: String((err as Error)?.message || err) }); }
+      });
+      return;
     }
     if (url.pathname === '/api/bans') {
       if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });

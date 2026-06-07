@@ -61,7 +61,7 @@
     document.body.dataset.os = eff;
     return { choice: choice, effective: eff };
   }
-  function setTheme(choice) { localStorage.setItem('zx_os', choice); applyTheme(); rerenderSettings(); }
+  function setTheme(choice) { localStorage.setItem('zx_os', choice); applyTheme(); try { Object.keys(wins).forEach(function (k) { applyWinMenus(wins[k]); }); } catch (e) {} rerenderSettings(); }
 
   // light/dark mode (auto follows the OS via prefers-color-scheme)
   function modeChoice() { return localStorage.getItem('zx_mode') || 'auto'; }
@@ -87,6 +87,15 @@
     it: { 'Files': 'File', 'Text Editor': 'Editor di testo', 'Calculator': 'Calcolatrice', 'Image Viewer': 'Visualizzatore immagini', 'Media Player': 'Lettore multimediale', 'Ebook Reader': 'Lettore di e-book', 'Word': 'Word', 'Excel': 'Excel', 'SFTP Client': 'Client SFTP', 'Telnet': 'Telnet', 'Messages': 'Messaggi', 'Office': 'Ufficio', 'Media': 'Multimedia', 'Network': 'Rete', 'Utilities': 'Utilità', 'Communication': 'Comunicazione', 'Agents': 'Agenti', 'Apps': 'App', 'New file': 'Nuovo file', 'New folder': 'Nuova cartella', 'Rename': 'Rinomina', 'Download': 'Scarica', 'Refresh': 'Aggiorna', 'Open': 'Apri', 'Open from File Manager': 'Apri dal File Manager', 'No file open': 'Nessun file aperto', 'Ask Zamolxis to edit': 'Chiedi a Zamolxis di modificare', 'empty folder': 'cartella vuota', 'Could not open.': 'Impossibile aprire.' }
   };
   Object.keys(I18N_APPS).forEach(function (l) { if (I18N[l]) Object.keys(I18N_APPS[l]).forEach(function (k) { I18N[l][k] = I18N_APPS[l][k]; }); });
+  // Application-menu labels.
+  var I18N_MENUS = {
+    es: { 'File': 'Archivo', 'Edit': 'Editar', 'View': 'Ver', 'Page': 'Página', 'Session': 'Sesión', 'New': 'Nuevo', 'Select all': 'Seleccionar todo', 'Rotate': 'Rotar', 'Delete page': 'Eliminar página', 'Save as new file': 'Guardar como nuevo', 'Connect': 'Conectar', 'Disconnect': 'Desconectar', 'Upload': 'Subir', 'Save As': 'Guardar como' },
+    fr: { 'File': 'Fichier', 'Edit': 'Édition', 'View': 'Affichage', 'Page': 'Page', 'Session': 'Session', 'New': 'Nouveau', 'Select all': 'Tout sélectionner', 'Rotate': 'Pivoter', 'Delete page': 'Supprimer la page', 'Save as new file': 'Enregistrer comme nouveau', 'Connect': 'Connecter', 'Disconnect': 'Déconnecter', 'Upload': 'Téléverser', 'Save As': 'Enregistrer sous' },
+    de: { 'File': 'Datei', 'Edit': 'Bearbeiten', 'View': 'Ansicht', 'Page': 'Seite', 'Session': 'Sitzung', 'New': 'Neu', 'Select all': 'Alles auswählen', 'Rotate': 'Drehen', 'Delete page': 'Seite löschen', 'Save as new file': 'Als neue Datei speichern', 'Connect': 'Verbinden', 'Disconnect': 'Trennen', 'Upload': 'Hochladen', 'Save As': 'Speichern unter' },
+    ro: { 'File': 'Fișier', 'Edit': 'Editare', 'View': 'Vizualizare', 'Page': 'Pagină', 'Session': 'Sesiune', 'New': 'Nou', 'Select all': 'Selectează tot', 'Rotate': 'Rotește', 'Delete page': 'Șterge pagina', 'Save as new file': 'Salvează ca fișier nou', 'Connect': 'Conectează', 'Disconnect': 'Deconectează', 'Upload': 'Încarcă', 'Save As': 'Salvează ca' },
+    it: { 'File': 'File', 'Edit': 'Modifica', 'View': 'Visualizza', 'Page': 'Pagina', 'Session': 'Sessione', 'New': 'Nuovo', 'Select all': 'Seleziona tutto', 'Rotate': 'Ruota', 'Delete page': 'Elimina pagina', 'Save as new file': 'Salva come nuovo file', 'Connect': 'Connetti', 'Disconnect': 'Disconnetti', 'Upload': 'Carica', 'Save As': 'Salva con nome' }
+  };
+  Object.keys(I18N_MENUS).forEach(function (l) { if (I18N[l]) Object.keys(I18N_MENUS[l]).forEach(function (k) { I18N[l][k] = I18N_MENUS[l][k]; }); });
   function langChoice() { return localStorage.getItem('zx_lang') || 'en'; }
   function T(s) { var L = langChoice(); if (L === 'en') return s; var d = I18N[L]; return (d && d[s]) || s; }
   function Tf(s, vars) { var out = T(s); if (vars) Object.keys(vars).forEach(function (k) { out = out.split('{' + k + '}').join(vars[k]); }); return out; }
@@ -106,12 +115,52 @@
   var openByApp = {};       // appId -> instanceId (for singletons)
   var seq = 0;
 
+  // ---------- Application menu bar (real-app feel; in-window on Win/Ubuntu, global top bar on macOS) ----------
+  var openDD = null;
+  function closeDD() { if (openDD) { openDD.remove(); openDD = null; } }
+  function buildMenuBar(container, model) {
+    container.innerHTML = '';
+    model.forEach(function (menu) {
+      var b = el('button', 'menu-btn', menu.label);
+      b.addEventListener('click', function (e) {
+        e.stopPropagation(); var wasOpen = openDD && openDD._owner === b; closeDD(); if (wasOpen) return;
+        var dd = el('div', 'menu-dd'); dd._owner = b;
+        (menu.items || []).forEach(function (it) {
+          if (it === '---') { dd.appendChild(el('div', 'menu-sep')); return; }
+          var mi = el('div', 'menu-item' + (it.disabled ? ' disabled' : ''));
+          mi.appendChild(el('span', null, it.label));
+          if (it.accel) mi.appendChild(el('span', 'menu-accel', it.accel));
+          mi.addEventListener('click', function () { closeDD(); if (!it.disabled && it.action) it.action(); });
+          dd.appendChild(mi);
+        });
+        document.body.appendChild(dd);
+        var r = b.getBoundingClientRect(); dd.style.left = r.left + 'px'; dd.style.top = r.bottom + 'px';
+        openDD = dd;
+      });
+      container.appendChild(b);
+    });
+  }
+  function macMenuHost() { var h = document.getElementById('mac-menus'); if (!h) { h = el('div'); h.id = 'mac-menus'; var left = document.getElementById('topbar-left'); if (left) left.appendChild(h); } return h; }
+  function macMenuClear() { var h = document.getElementById('mac-menus'); if (h) { h.innerHTML = ''; h.style.display = 'none'; } }
+  function applyWinMenus(w) {
+    var hasMenus = w._menuModel && w._menuModel.length;
+    if (document.body.dataset.os === 'mac') {
+      if (w.menubar) w.menubar.style.display = 'none';
+      if (w.root.classList.contains('focused')) { if (hasMenus) { var h = macMenuHost(); buildMenuBar(h, w._menuModel); h.style.display = 'flex'; } else macMenuClear(); }
+    } else {
+      macMenuClear();
+      if (w.menubar) { if (hasMenus) { buildMenuBar(w.menubar, w._menuModel); w.menubar.style.display = 'flex'; } else w.menubar.style.display = 'none'; }
+    }
+  }
+
   function focusWin(w) {
     Object.keys(wins).forEach(function (k) { wins[k].root.classList.remove('focused'); });
     w.root.classList.add('focused');
     w.root.style.zIndex = ++zTop;
     w.minimized = false; w.root.classList.remove('minimized');
     var nm = document.getElementById('tb-appname'); if (nm) nm.textContent = w._appTitle || w.titleEl.textContent || 'Desktop';
+    applyWinMenus(w);
+    closeDD();
     syncTaskbar();
     saveSession();
   }
@@ -136,11 +185,13 @@
     ctrls.appendChild(bMin); ctrls.appendChild(bMax); ctrls.appendChild(bClose);
     bar.appendChild(ticon); bar.appendChild(title); bar.appendChild(ctrls);
 
+    var menubar = el('div', 'menubar'); menubar.style.display = 'none';
     var body = el('div', 'win-body');
-    root.appendChild(bar); root.appendChild(body);
+    root.appendChild(bar); root.appendChild(menubar); root.appendChild(body);
     ['n','s','e','w','ne','nw','se','sw'].forEach(function (d) { root.appendChild(el('div', 'rsz ' + d)); });
 
-    var w = { id: id, appId: spec.appId, root: root, body: body, titleEl: title, minimized: false, maximized: false, prev: null, onClose: spec.onClose, cleanup: [] };
+    var w = { id: id, appId: spec.appId, root: root, body: body, menubar: menubar, titleEl: title, minimized: false, maximized: false, prev: null, onClose: spec.onClose, cleanup: [] };
+    w.setMenus = function (model) { w._menuModel = model; applyWinMenus(w); };
     wins[id] = w;
     winLayer.appendChild(root);
 
@@ -181,9 +232,12 @@
   function closeWin(w) {
     try { if (w.onClose) w.onClose(w); } catch (e) {}
     w.cleanup.forEach(function (fn) { try { fn(); } catch (e) {} });
+    var wasFocused = w.root.classList.contains('focused');
     w.root.remove();
     delete wins[w.id];
     Object.keys(openByApp).forEach(function (a) { if (openByApp[a] === w.id) delete openByApp[a]; });
+    closeDD();
+    if (document.body.dataset.os === 'mac' && wasFocused) macMenuClear();
     syncTaskbar();
     saveSession();
   }
@@ -1158,6 +1212,17 @@
       var i = 0; function next() { if (i >= arr.length) { load(cur); return; } var f = arr[i++]; var rd = new FileReader(); rd.onload = function () { var s = String(rd.result || ''); var c = s.indexOf(','); var b64 = c >= 0 ? s.slice(c + 1) : s; fsapi('writeB64', { path: (cur ? cur + '/' : '') + f.name, content: b64 }).then(next).catch(next); }; rd.readAsDataURL(f); }
       next();
     });
+    win.setMenus([
+      { label: T('File'), items: [
+        { label: T('New file'), action: function () { newFileBtn.click(); } },
+        { label: T('New folder'), action: function () { mkdirBtn.click(); } },
+        { label: T('Upload') + '...', action: function () { upFileBtn.click(); } }
+      ] },
+      { label: T('View'), items: [
+        { label: T('Refresh'), accel: 'F5', action: function () { refreshBtn.click(); } },
+        { label: 'Up', action: function () { upBtn.click(); } }
+      ] }
+    ]);
     load(cur);
   }
 
@@ -1180,6 +1245,15 @@
       saveBtn.disabled = true; status.textContent = T('Saving...');
       fsapi('write', { path: pathRef, content: ta.value }).then(function (d) { saveBtn.disabled = false; status.textContent = d.error ? d.error : T('Saved.'); }).catch(function () { saveBtn.disabled = false; status.textContent = T('Failed.'); });
     });
+    win.setMenus([
+      { label: T('File'), items: [
+        { label: T('New'), action: function () { spawnApp('texteditor:new' + seq, T('New file'), ICON.editor, 720, 560, function (b2, w2) { mountTextEditor(b2, w2, null); }); } },
+        { label: T('Open') + '...', action: function () { openBtn.click(); } },
+        '---',
+        { label: T('Save'), accel: 'Ctrl+S', action: function () { saveBtn.click(); } }
+      ] },
+      { label: T('Edit'), items: [ { label: T('Select all'), action: function () { ta.focus(); ta.select(); } } ] }
+    ]);
   }
 
   function mountCalculator(body, win) {
@@ -1223,6 +1297,7 @@
     bar.appendChild(el('span', null, rel.split('/').pop())); var sp = el('div'); sp.style.flex = '1'; bar.appendChild(sp);
     var dl = el('a', 'btn ghost', T('Download')); dl.href = fileUrl(rel, true); dl.style.cssText = 'text-decoration:none;color:#ccc'; bar.appendChild(dl);
     wrap.appendChild(img); wrap.appendChild(bar); body.appendChild(wrap);
+    win.setMenus([{ label: T('File'), items: [ { label: T('Download'), action: function () { dl.click(); } }, { label: T('Open from File Manager'), action: function () { launchApp('files'); } } ] }]);
   }
 
   function mountMediaPlayer(body, win, rel) {
@@ -1297,6 +1372,10 @@
         pdfDoc.save().then(function (bytes) { return fsapi('writeB64', { path: out, content: bytesToB64(bytes) }); }).then(function (d) { msg.textContent = d && d.error ? d.error : (T('Saved.') + ' ' + out); dirty = false; }).catch(function () { msg.textContent = T('Failed.'); });
       });
     });
+    win.setMenus([
+      { label: T('File'), items: [ { label: T('Download'), action: function () { dl.click(); } }, { label: T('Save as new file'), action: function () { saveBtn.click(); } } ] },
+      { label: T('Page'), items: [ { label: T('Rotate'), action: function () { rotBtn.click(); } }, { label: T('Delete page'), action: function () { delBtn.click(); } } ] }
+    ]);
   }
 
   // Document viewer/editor: Word (render via mammoth, edit + save back to .docx) and
@@ -1347,6 +1426,10 @@
         });
       }
     });
+    win.setMenus([
+      { label: T('File'), items: [ { label: T('Download'), action: function () { dl.click(); } }, { label: T('Save'), action: function () { saveBtn.click(); } } ] },
+      { label: T('Edit'), items: [ { label: T('Edit'), action: function () { editBtn.click(); } } ] }
+    ]);
   }
 
   // Telnet / raw-TCP terminal over the /telnet WebSocket bridge.
@@ -1375,6 +1458,10 @@
     }
     connBtn.addEventListener('click', function () { if (sock) { try { sock.close(); } catch (e) {} } else connect(); });
     inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); if (sock && sock.readyState === 1) { sock.send(inp.value + '\r\n'); append(inp.value + '\n'); } inp.value = ''; } });
+    win.setMenus([{ label: T('Session'), items: [
+      { label: T('Connect'), action: function () { if (!sock) connect(); } },
+      { label: T('Disconnect'), action: function () { if (sock) { try { sock.close(); } catch (e) {} } } }
+    ] }]);
     win.cleanup.push(function () { if (sock) { try { sock.close(); } catch (e) {} } });
   }
 
@@ -1436,19 +1523,59 @@
     ulBtn.addEventListener('click', function () { fileIn.click(); });
     fileIn.addEventListener('change', function () { var f = (fileIn.files || [])[0]; fileIn.value = ''; if (!f) return; var rd = new FileReader(); rd.onload = function () { var s = String(rd.result || ''); var c = s.indexOf(','); var b64 = c >= 0 ? s.slice(c + 1) : s; status.textContent = 'uploading...'; sapi('write', { path: join(cur, f.name), content: b64 }).then(function () { load(cur); }); }; rd.readAsDataURL(f); });
     dcBtn.addEventListener('click', function () { if (sid) sapi('disconnect', {}); sid = null; bar.style.display = 'none'; form.style.display = 'flex'; list.innerHTML = ''; status.textContent = ''; });
+    win.setMenus([
+      { label: T('Session'), items: [ { label: T('Connect'), action: function () { connBtn.click(); } }, { label: T('Disconnect'), action: function () { dcBtn.click(); } } ] },
+      { label: T('File'), items: [ { label: T('New folder'), action: function () { mkBtn.click(); } }, { label: T('Upload') + '...', action: function () { ulBtn.click(); } }, { label: T('Refresh'), action: function () { refBtn.click(); } } ] }
+    ]);
     win.cleanup.push(function () { if (sid) sapi('disconnect', {}); });
   }
 
-  // Messages: the cross-channel conversation. Bound to the bridged "main" chat, so messages from
-  // every connected messaging channel arrive here and replies go back out to them.
+  // Messages: a real client for the connected messaging channels (Telegram/Discord/Slack/Signal/
+  // WhatsApp/email). Lists channels, shows each channel's real message history, and sends replies.
   function mountMessages(body, win) {
     body.style.padding = '0';
-    var wrap = el('div'); wrap.style.cssText = 'height:100%;display:flex;flex-direction:column';
-    var head = el('div'); head.style.cssText = 'padding:6px 10px;border-bottom:1px solid rgba(128,128,128,.2)';
-    head.appendChild(el('div', 'hint', 'Connected messaging channels relay here — reply to respond on all of them.'));
-    var holder = el('div'); holder.style.cssText = 'flex:1;min-height:0;display:flex;flex-direction:column';
-    wrap.appendChild(head); wrap.appendChild(holder); body.appendChild(wrap);
-    buildChat(holder, win, 'main', { route: true });
+    var wrap = el('div'); wrap.style.cssText = 'height:100%;display:flex;font-size:13px';
+    var side = el('div'); side.style.cssText = 'width:164px;flex:0 0 auto;border-right:1px solid rgba(128,128,128,.2);overflow:auto;padding:6px';
+    var main = el('div'); main.style.cssText = 'flex:1;display:flex;flex-direction:column;min-width:0';
+    var head = el('div', 'hint'); head.style.cssText = 'padding:8px 10px;border-bottom:1px solid rgba(128,128,128,.2)';
+    var log = el('div'); log.style.cssText = 'flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px';
+    var composer = el('div'); composer.style.cssText = 'display:none;gap:6px;padding:8px;border-top:1px solid rgba(128,128,128,.2)';
+    var chatIn = el('input', 'inp'); chatIn.placeholder = 'chat id'; chatIn.style.cssText = 'width:104px;flex:0 0 auto';
+    var ta = el('input', 'inp'); ta.placeholder = T('Message') + '...'; ta.style.flex = '1';
+    var send = el('button', 'btn', T('Send'));
+    composer.appendChild(chatIn); composer.appendChild(ta); composer.appendChild(send);
+    main.appendChild(head); main.appendChild(log); main.appendChild(composer);
+    wrap.appendChild(side); wrap.appendChild(main); body.appendChild(wrap);
+    var current = null, timer = null;
+    function select(name) { current = name; head.textContent = name; composer.style.display = 'flex'; Array.prototype.forEach.call(side.children, function (c) { c.classList.toggle('active', c.dataset.ch === name); }); chatIn.value = ''; refresh(); }
+    function loadChannels() {
+      api('/api/channels').then(function (d) {
+        side.innerHTML = ''; var chs = d.channels || [];
+        if (!chs.length) { head.textContent = 'No messaging channels connected. Enable Telegram, Discord, Slack, Signal, WhatsApp or email in Settings — connected channels and their conversations appear here.'; side.appendChild(el('div', 'hint', '—')); return; }
+        chs.forEach(function (c) { var b = el('div', 'sm-row'); b.dataset.ch = c.name; b.appendChild(el('div', 'label', c.name + (c.running ? '' : ' (off)'))); b.addEventListener('click', function () { select(c.name); }); side.appendChild(b); });
+        if (!current) select(chs[0].name);
+      }).catch(function () { side.innerHTML = ''; side.appendChild(el('div', 'hint', 'error')); });
+    }
+    function refresh() {
+      if (!current) return;
+      api('/api/channels/messages?channel=' + encodeURIComponent(current)).then(function (d) {
+        log.innerHTML = ''; var msgs = d.messages || []; var lastChat = '';
+        if (!msgs.length) log.appendChild(el('div', 'hint', 'No messages yet on ' + current + '.'));
+        msgs.forEach(function (m) {
+          lastChat = m.chatId;
+          var row = el('div', 'msg ' + (m.dir === 'out' ? 'user' : 'bot'));
+          row.appendChild(el('div', 'who', (m.dir === 'out' ? '→ ' : '') + (m.from || m.chatId || '') + (m.chatId ? ' · ' + m.chatId : '')));
+          var c = el('div'); c.textContent = m.text; row.appendChild(c); log.appendChild(row);
+        });
+        log.scrollTop = log.scrollHeight;
+        if (lastChat && !chatIn.value) chatIn.value = lastChat;
+      }).catch(function () {});
+    }
+    function doSend() { var t = ta.value.trim(), cid = chatIn.value.trim(); if (!t || !cid || !current) return; ta.value = ''; api('/api/channels/send', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ channel: current, chatId: cid, text: t }) }).then(function (r) { if (r && r.ok) refresh(); else head.textContent = (r && r.error) || 'send failed'; }); }
+    send.addEventListener('click', doSend);
+    ta.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doSend(); } });
+    loadChannels(); timer = setInterval(function () { if (!win.closed) refresh(); }, 5000);
+    win.cleanup.push(function () { if (timer) clearInterval(timer); });
   }
 
   // ---------- per-app chat-window setting (the "is chat needed?" toggle) ----------
@@ -1650,6 +1777,7 @@
   document.addEventListener('click', function (e) {
     if (!e.target.closest('#startmenu') && !e.target.closest('#start-btn') && !e.target.closest('#apps-btn')) closeStart();
     if (!e.target.closest('.desk-icon') && selectedIcon) { selectedIcon.classList.remove('selected'); selectedIcon = null; }
+    if (openDD && !e.target.closest('.menu-dd') && !e.target.closest('.menu-btn')) closeDD();
   });
   $('#clock').addEventListener('click', function () { launchApp('settings'); });
 
