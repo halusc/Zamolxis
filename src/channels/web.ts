@@ -1574,6 +1574,7 @@ function provRow(p){var lim=(p.kind==='free'&&p.freeDaily&&p.used>=p.freeDaily);
   s+='<div style="font-size:12px;color:var(--mut);margin:3px 0">'+esc(p.note)+' · model '+esc(p.model)+(p.kind==="free"?(' · used today '+p.used+'/'+p.freeDaily):'')+'</div>';
   s+='<a href="'+esc(p.signup)+'" target="_blank" rel="noopener" style="color:var(--accent);font-size:12px">Get a key &#8599;</a>';
   s+='<input id="prov_'+esc(p.envKey)+'" type="password" autocomplete="new-password" value="'+(p.configured?KEYMASK:'')+'" placeholder="'+(p.configured?"configured - leave to keep":"paste API key")+'" style="margin-top:6px">';
+  if(p.configured)s+='<button class="provrm" data-k="'+esc(p.envKey)+'" style="margin-top:6px;background:transparent;border:1px solid var(--line);color:#e0a55f;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">Remove key</button>';
   return s+'</div>'}
 function renderProviders(d){var provs=d.providers||[];var h='';
   h+='<div style="font-size:12px;color:var(--mut);margin-bottom:8px">Routing order: each tier is tried in turn; if it can\\'t cope it hands off to the next. Drop "claude" to run only on local/free/paid models. To USE a provider, add its id to the chain.</div>';
@@ -1619,7 +1620,8 @@ function renderProviders(d){var provs=d.providers||[];var h='';
   });
   el('provview').innerHTML=h;RAIL=d;renderRail();
   Array.prototype.forEach.call(el('provview').querySelectorAll('.preset'),function(a){a.onclick=function(e){e.preventDefault();el('prov_chain').value=a.getAttribute('data-c').split(',').join(', ')}});
-  Array.prototype.forEach.call(el('provview').querySelectorAll('.instbtn'),function(b){b.onclick=function(){var id=b.getAttribute('data-inst');doInstall(id,'instout_'+id,b)}})}
+  Array.prototype.forEach.call(el('provview').querySelectorAll('.instbtn'),function(b){b.onclick=function(){var id=b.getAttribute('data-inst');doInstall(id,'instout_'+id,b)}});
+  Array.prototype.forEach.call(el('provview').querySelectorAll('.provrm'),function(b){b.onclick=function(){var k=b.getAttribute('data-k');if(!confirm('Remove this provider key? It will be de-configured and dropped from the model list.'))return;b.disabled=true;b.textContent='Removing...';fetch('/api/settings',{method:'POST',headers:hdrs(),body:JSON.stringify({clearCredentials:[k]})}).then(function(r){return r.json()}).then(function(){showToast('Key removed.');setTimeout(hideToast,2000);loadProviders()}).catch(function(){b.disabled=false;b.textContent='Remove key'})}})}
 function loadProviders(){fetch('/api/providers',{headers:hdrs()}).then(function(r){return r.ok?r.json():null}).then(function(d){if(d)renderProviders(d)})}
 function saveProviders(){panelDirty=false;var creds={};Array.prototype.forEach.call(document.querySelectorAll('[id^="prov_"]'),function(n){if(n.id==='prov_chain')return;if(n.value&&n.value!==KEYMASK)creds[n.id.slice(5)]=n.value});
   fetch('/api/settings',{method:'POST',headers:hdrs(),body:JSON.stringify({live:{routeChain:el('prov_chain').value},credentials:creds})}).then(function(r){return r.json()}).then(function(s){
