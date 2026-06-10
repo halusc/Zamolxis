@@ -13,6 +13,7 @@ import { runWebSearch, localSearchAvailable, runHaService, haConfigured } from '
 import { setTempName } from '../core/displayName.js';
 import { buildPaidTools } from './paid.js';
 import { readInbox, resolveAccount, listAccountNames, addAccount } from './email.js';
+import { outlookMail } from '../core/outlookLocal.js';
 import type { AgentStore } from '../core/agents.js';
 
 /** Live conversation context, captured per agent turn so tools deliver to the right place. */
@@ -478,6 +479,20 @@ export function buildToolServers(ctx: ToolContext, deps: ToolDeps): Record<strin
     },
   );
 
+  const outlookMailTool = tool(
+    'outlook_mail',
+    'Read the user\'s LOCAL Outlook desktop mailbox (classic Outlook via COM — works even when Microsoft 365 blocks IMAP; no cloud login). READ-ONLY: never sends, deletes, or marks read. Actions: list (recent/unread), search (by subject/sender), read (full body by EntryID), folders. Use for "any new mail in outlook?", "summarize my unread work email", "find the email from X".',
+    {
+      action: z.enum(['list', 'search', 'read', 'folders']).describe('What to do'),
+      folder: z.string().optional().describe('Folder name (default Inbox); e.g. Sent, Drafts, or any folder by name'),
+      count: z.number().optional().describe('Max messages (default 15, max 50)'),
+      unread_only: z.boolean().optional().describe('list: only unread (default true)'),
+      query: z.string().optional().describe('search: text matched against subject and sender'),
+      id: z.string().optional().describe('read: the message EntryID from a previous list/search'),
+    },
+    async (args) => text(await outlookMail({ action: args.action, folder: args.folder, count: args.count, unreadOnly: args.unread_only, query: args.query, id: args.id })),
+  );
+
   const haBuildMap = tool(
     'ha_build_map',
     'Scan Home Assistant and (re)build the "home-assistant-devices" skill: a clean map of devices by area and type with simple aliases and exact entity_ids, organized by the smart model so the local model can control the house via ha_service. Call this when devices/areas changed or the map is missing.',
@@ -500,6 +515,7 @@ export function buildToolServers(ctx: ToolContext, deps: ToolDeps): Record<strin
       tools: [
         haBuildMap,
         readEmail,
+        outlookMailTool,
         addEmailAccount,
         listEmailAccounts,
         createAgent,

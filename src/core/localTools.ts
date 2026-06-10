@@ -1,4 +1,5 @@
 import { logger } from '../logger.js';
+import { outlookAvailable, outlookMail } from './outlookLocal.js';
 
 /**
  * Real tools the on-device local model can call (executed by US, not the model):
@@ -273,6 +274,30 @@ export function buildLocalTools(): LocalToolset {
     names.push('web_search');
   }
 
+  if (outlookAvailable()) {
+    defs.push({
+      type: 'function',
+      function: {
+        name: 'outlook_mail',
+        description:
+          'Read the user\'s LOCAL Outlook desktop mailbox (classic Outlook via COM — no cloud login needed). READ-ONLY: never sends, deletes, or marks read. action="list" = recent/unread messages (default unread, set unread_only=false for recent); action="search" query="..." = find by subject/sender; action="read" id="<EntryID from a list/search>" = full message body; action="folders" = list mail folders. Optional folder name (default Inbox, e.g. "Sent"). Use for "any new mail?", "read my outlook", "find the email from X".',
+        parameters: {
+          type: 'object',
+          properties: {
+            action: { type: 'string', enum: ['list', 'search', 'read', 'folders'], description: 'What to do' },
+            folder: { type: 'string', description: 'Folder name (default Inbox); e.g. Sent, Drafts, or any folder' },
+            count: { type: 'number', description: 'Max messages (default 15, max 50)' },
+            unread_only: { type: 'boolean', description: 'list: only unread (default true)' },
+            query: { type: 'string', description: 'search: text matched against subject and sender' },
+            id: { type: 'string', description: 'read: the message EntryID from a previous list/search' },
+          },
+          required: ['action'],
+        },
+      },
+    });
+    names.push('outlook_mail');
+  }
+
   async function httpGet(args: Record<string, unknown>): Promise<string> {
     const url = String(args.url ?? '');
     if (!/^https?:\/\//i.test(url)) return 'Error: url must start with http:// or https://';
@@ -319,6 +344,16 @@ export function buildLocalTools(): LocalToolset {
         return t || '(no readable text extracted — the page may be JavaScript-heavy or blocking bots; try http_get, or another source/skill)';
       }
       if (name === 'ha_service') return runHaService(String(args.domain ?? ''), String(args.service ?? ''), String(args.entity_id ?? ''));
+      if (name === 'outlook_mail') {
+        return outlookMail({
+          action: String(args.action ?? 'list'),
+          folder: args.folder ? String(args.folder) : undefined,
+          count: args.count ? Number(args.count) : undefined,
+          unreadOnly: args.unread_only === undefined ? undefined : args.unread_only !== false && args.unread_only !== 'false',
+          query: args.query ? String(args.query) : undefined,
+          id: args.id ? String(args.id) : undefined,
+        });
+      }
       return `Unknown tool: ${name}`;
     },
   };
