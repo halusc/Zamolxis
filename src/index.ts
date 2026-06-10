@@ -25,6 +25,7 @@ import { SessionIndex } from './core/sessionIndex.js';
 import { TabsManager } from './core/tabs.js';
 import { UsageTracker } from './core/usage.js';
 import { initProviders } from './core/providers.js';
+import { initClaudeModels } from './core/claudeModels.js';
 import { BanStore, isSmartestModel } from './core/bans.js';
 import { configuredProviders } from './core/providers.js';
 import { buildToolServers } from './tools/index.js';
@@ -82,6 +83,7 @@ async function main(): Promise<void> {
   const config = loadConfig();
   if (process.argv.includes('--doctor') || process.argv.includes('--check')) doctor(config);
   initProviders(config.dataDir); // free-cloud provider rotation: daily usage tracking
+  initClaudeModels(config.dataDir); // live Claude model list from the API (cached; falls back offline)
   const auth = checkAuth();
   logger.info(
     { dataDir: config.dataDir, model: config.model ?? '(cli default)', auth: auth.note },
