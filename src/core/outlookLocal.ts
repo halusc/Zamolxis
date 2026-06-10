@@ -197,6 +197,26 @@ function runPs(env: Record<string, string>): Promise<string> {
   });
 }
 
+/** STRUCTURED variants for the desktop apps (return parsed bridge JSON, not formatted text). */
+export async function outlookMailData(args: OutlookArgs): Promise<Record<string, unknown>> {
+  if (!outlookAvailable()) return { error: 'Outlook is only available on this Windows machine.' };
+  const action = ['list', 'read', 'search', 'folders'].includes(args.action) ? args.action : 'list';
+  const raw = await runPs({
+    ZXOL_ACTION: action, ZXOL_FOLDER: args.folder || '', ZXOL_COUNT: String(args.count || 25),
+    ZXOL_UNREAD: args.unreadOnly === false ? '0' : action === 'list' ? '1' : '0', ZXOL_QUERY: args.query || '', ZXOL_ID: args.id || '',
+  });
+  try { return JSON.parse(raw) as Record<string, unknown>; } catch { return { error: raw.slice(0, 300) }; }
+}
+export async function outlookPimData(args: { action: string; days?: number; query?: string; count?: number }): Promise<Record<string, unknown>> {
+  if (!outlookAvailable()) return { error: 'Outlook is only available on this Windows machine.' };
+  const action = ['calendar', 'contacts', 'tasks'].includes(args.action) ? args.action : 'calendar';
+  const raw = await runPs({
+    ZXOL_ACTION: action, ZXOL_DAYS: String(args.days || 7), ZXOL_QUERY: args.query || '', ZXOL_COUNT: String(args.count || 50),
+    ZXOL_FOLDER: '', ZXOL_UNREAD: '0', ZXOL_ID: '',
+  });
+  try { return JSON.parse(raw) as Record<string, unknown>; } catch { return { error: raw.slice(0, 300) }; }
+}
+
 /** Calendar / contacts / tasks from the same local Outlook profile. */
 export async function outlookPim(args: { action: string; days?: number; query?: string; count?: number }): Promise<string> {
   if (!outlookAvailable()) return 'outlook_pim only works on the Windows machine where classic Outlook desktop is installed.';

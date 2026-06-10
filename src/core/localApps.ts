@@ -114,6 +114,16 @@ export async function onenoteRead(args: { action: string; query?: string; id?: s
   return pages.slice(0, 60).map((p, i) => `${i + 1}. ${p.notebook} / ${p.section} / ${p.page} (${(p.modified || '').slice(0, 10)})\n   id: ${p.id}`).join('\n');
 }
 
+/** Structured OneNote data for the Notes app (parsed bridge JSON). */
+export async function onenoteData(args: { action: string; query?: string; id?: string }): Promise<Record<string, unknown>> {
+  if (!onenoteAvailable()) return { error: 'OneNote is only available on this Windows machine.' };
+  const action = ['notebooks', 'search', 'read'].includes(args.action) ? args.action : 'notebooks';
+  const r = await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', ONENOTE_B64], {
+    ZXON_ACTION: action, ZXON_QUERY: args.query || '', ZXON_ID: args.id || '',
+  });
+  try { return JSON.parse(r.out.trim()) as Record<string, unknown>; } catch { return { error: (r.err || r.out).slice(0, 300) }; }
+}
+
 // ───────────────────────── SQL Server / LocalDB (sqlcmd) ─────────────────────────
 
 function sqlcmdPath(): string {
@@ -143,6 +153,21 @@ export async function sqlQuery(args: { query: string; server?: string; database?
   if (r.code !== 0 && !r.out.trim()) return 'sqlcmd failed: ' + clip(r.err || 'unknown error', 600);
   const body = clip((r.out || '').trim(), 7000);
   return body || '(no rows)';
+}
+
+/** Structured SQL result for the Database app: { columns, rows } or { error }. */
+export async function sqlQueryData(args: { query: string; server?: string; database?: string }): Promise<{ columns?: string[]; rows?: string[][]; note?: string; error?: string }> {
+  const txt = await sqlQuery(args);
+  if (/^(Read-only|sqlcmd failed)/.test(txt)) return { error: txt };
+  const lines = txt.split(/\r?\n/);
+  let note = '';
+  const m = lines.find((l) => /^\(\d+ rows? affected\)/.test(l.trim()));
+  if (m) note = m.trim();
+  const body = lines.filter((l) => l.length && !/^\(\d+ rows? affected\)/.test(l.trim()));
+  if (!body.length) return { columns: [], rows: [], note: note || '(no rows)' };
+  const columns = body[0]!.split('|');
+  const rows = body.slice(1).filter((l) => !/^[-\s|]+$/.test(l)).map((l) => l.split('|'));
+  return { columns, rows, note };
 }
 
 // ───────────────────────── Browser history / bookmarks ─────────────────────────
@@ -203,12 +228,12 @@ function chromeBookmarks(dir: string, browser: string, q: string): HistRow[] {
   return out;
 }
 
-export async function browserHistory(args: { what?: string; query?: string; limit?: number; browser?: string }): Promise<string> {
+async function gatherHistory(args: { what?: string; query?: string; limit?: number; browser?: string }): Promise<HistRow[]> {
   const what = args.what === 'bookmarks' ? 'bookmarks' : 'history';
   const q = String(args.query || '').toLowerCase();
   const limit = Math.min(Math.max(Number(args.limit) || 20, 1), 50);
   const sources = browserSources().filter((s) => !args.browser || s.browser === args.browser);
-  if (!sources.length) return 'No browser profiles found' + (args.browser ? ` for ${args.browser}.` : '.');
+  if (!sources.length) return [];
   const rows: HistRow[] = [];
   for (const s of sources) {
     if (what === 'bookmarks' && s.kind === 'chromium') {
@@ -245,9 +270,18 @@ export async function browserHistory(args: { what?: string; query?: string; limi
     }
   }
   const seen = new Set<string>();
-  const merged = rows.sort((a, b) => b.ts - a.ts).filter((r) => (seen.has(r.url) ? false : (seen.add(r.url), true))).slice(0, limit);
-  if (!merged.length) return q ? `No ${what} entries matching "${args.query}".` : `No ${what} entries found.`;
+  return rows.sort((a, b) => b.ts - a.ts).filter((r) => (seen.has(r.url) ? false : (seen.add(r.url), true))).slice(0, limit);
+}
+
+export async function browserHistory(args: { what?: string; query?: string; limit?: number; browser?: string }): Promise<string> {
+  const what = args.what === 'bookmarks' ? 'bookmarks' : 'history';
+  const merged = await gatherHistory(args);
+  if (!merged.length) return args.query ? `No ${what} entries matching "${args.query}".` : `No ${what} entries found (or no browser profiles).`;
   return merged.map((r, i) => `${i + 1}. [${r.browser}] ${r.ts > 0 ? new Date(r.ts).toISOString().slice(0, 16).replace('T', ' ') : ''} ${r.title || '(no title)'}\n   ${r.url}`).join('\n');
+}
+
+export async function browserHistoryData(args: { what?: string; query?: string; limit?: number; browser?: string }): Promise<{ what: string; rows: HistRow[] }> {
+  return { what: args.what === 'bookmarks' ? 'bookmarks' : 'history', rows: await gatherHistory(args) };
 }
 
 // ───────────────────────── Archives (7-Zip) ─────────────────────────
