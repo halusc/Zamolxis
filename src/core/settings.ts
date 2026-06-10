@@ -5,23 +5,11 @@ import type { SandboxManager, BackendName } from '../sandbox/backends.js';
 import type { MemoryManager } from './memory.js';
 import { searchProviderName } from './localTools.js';
 import { configuredProviders } from './providers.js';
+import { claudeModels } from './claudeModels.js';
 import { logger } from '../logger.js';
 
 const PERMISSION_MODES = ['default', 'acceptEdits', 'bypassPermissions', 'plan', 'dontAsk'] as const;
 const SANDBOX_BACKENDS = ['local', 'docker', 'ssh', 'modal'] as const;
-
-/** Curated model choices for the dropdowns. '' = let the CLI pick its default. */
-const MODELS = [
-  '',
-  'opus',
-  'sonnet',
-  'haiku',
-  'claude-opus-4-8',
-  'claude-opus-4-7',
-  'claude-opus-4-6',
-  'claude-sonnet-4-6',
-  'claude-haiku-4-5',
-];
 
 const CHANNELS = ['cli', 'telegram', 'discord', 'slack', 'whatsapp', 'signal', 'email', 'web'] as const;
 
@@ -180,7 +168,7 @@ export class SettingsManager {
       meta: {
         // Claude variants + 'local' + every configured provider id — so all model pickers
         // (Model / Fast / Smartest, classic + desktop) can choose a free model or local, not just Claude.
-        models: [...MODELS, 'local', ...configuredProviders().map((p) => p.id)],
+        models: [...claudeModels(), 'local', ...configuredProviders().map((p) => p.id)],
         permissionModes: PERMISSION_MODES,
         sandboxBackends: SANDBOX_BACKENDS,
         configuredBackends: this.sandbox.listConfigured(),
