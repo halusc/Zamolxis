@@ -21,6 +21,8 @@ import { extractDocText } from '../core/extract.js';
 import { outlookMailData, outlookPimData } from '../core/outlookLocal.js';
 import { onenoteData, sqlQueryData, browserHistoryData, sqlConnections, sqlAddConnection, sqlRemoveConnection } from '../core/localApps.js';
 import { getCanvas } from '../core/canvas.js';
+import { notifsSince } from '../core/notifications.js';
+import { getWatchers, setWatchers } from '../core/watchers.js';
 import { autostartStatus, setAutostart } from '../core/autostart.js';
 import { oauthExpiry } from '../core/auth.js';
 import { effectiveName, tempName } from '../core/displayName.js';
@@ -730,6 +732,21 @@ export class WebChannel implements Channel {
         }
       })();
       return;
+    }
+    // Proactive notifications feed (toasts) + watcher config.
+    if (url.pathname === '/api/notifications' && req.method === 'GET') {
+      if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
+      return this.json(res, 200, { notifications: notifsSince(Number(url.searchParams.get('since') || 0) || 0) });
+    }
+    if (url.pathname === '/api/watchers') {
+      if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
+      if (req.method === 'GET') return this.json(res, 200, getWatchers());
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => { body += c; });
+        req.on('end', () => { try { this.json(res, 200, setWatchers(JSON.parse(body || '{}'))); } catch (err) { this.json(res, 400, { error: String(err) }); } });
+        return;
+      }
     }
     // Agent canvas — latest agent-pushed HTML for the Canvas desktop app to render/poll.
     if (url.pathname === '/api/canvas' && req.method === 'GET') {

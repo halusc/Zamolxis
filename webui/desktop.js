@@ -135,6 +135,14 @@
     it: { 'Voice': 'Voce', 'Speak replies': 'Leggi le risposte ad alta voce', 'Wake word ("Zamolxis")': 'Parola di attivazione ("Zamolxis")', 'Speak': 'Parla', 'Talk to Zamolxis and hear replies (uses your browser speech engine).': 'Parla con Zamolxis e ascolta le risposte (usa il motore vocale del browser).' }
   };
   Object.keys(I18N_VOICE).forEach(function (l) { if (I18N[l]) Object.keys(I18N_VOICE[l]).forEach(function (k) { I18N[l][k] = I18N_VOICE[l][k]; }); });
+  var I18N_WATCH = {
+    es: { 'Proactive': 'Proactivo', 'Watch Outlook inbox': 'Vigilar la bandeja de Outlook', 'Alert me about new email (toast + optional voice).': 'Avísame sobre correos nuevos (aviso + voz opcional).', 'every': 'cada', 'min': 'min' },
+    fr: { 'Proactive': 'Proactif', 'Watch Outlook inbox': 'Surveiller la boîte Outlook', 'Alert me about new email (toast + optional voice).': 'Me prévenir des nouveaux e-mails (notification + voix en option).', 'every': 'toutes les', 'min': 'min' },
+    de: { 'Proactive': 'Proaktiv', 'Watch Outlook inbox': 'Outlook-Posteingang überwachen', 'Alert me about new email (toast + optional voice).': 'Bei neuen E-Mails benachrichtigen (Hinweis + optional Stimme).', 'every': 'alle', 'min': 'Min' },
+    ro: { 'Proactive': 'Proactiv', 'Watch Outlook inbox': 'Monitorizează inboxul Outlook', 'Alert me about new email (toast + optional voice).': 'Anunță-mă despre e-mailuri noi (notificare + voce opțional).', 'every': 'la fiecare', 'min': 'min' },
+    it: { 'Proactive': 'Proattivo', 'Watch Outlook inbox': 'Monitora la posta di Outlook', 'Alert me about new email (toast + optional voice).': 'Avvisami delle nuove email (avviso + voce opzionale).', 'every': 'ogni', 'min': 'min' }
+  };
+  Object.keys(I18N_WATCH).forEach(function (l) { if (I18N[l]) Object.keys(I18N_WATCH[l]).forEach(function (k) { I18N[l][k] = I18N_WATCH[l][k]; }); });
   function langChoice() { return localStorage.getItem('zx_lang') || 'en'; }
   function T(s) { var L = langChoice(); if (L === 'en') return s; var d = I18N[L]; return (d && d[s]) || s; }
   function Tf(s, vars) { var out = T(s); if (vars) Object.keys(vars).forEach(function (k) { out = out.split('{' + k + '}').join(vars[k]); }); return out; }
@@ -184,6 +192,18 @@
     var w = launchApp('zamolxis');
     speak('Yes?');
     setTimeout(function () { if (w && w._voiceCapture) w._voiceCapture(); else if (vGet('zx_voice_wake')) startWake(); }, 800);
+  }
+
+  // ---------- Proactive notifications (toasts + browser Notification + optional voice) ----------
+  function showToast(title, bodyTxt, kind) {
+    var host = document.getElementById('zx-toasts');
+    if (!host) { host = el('div'); host.id = 'zx-toasts'; document.body.appendChild(host); }
+    var t = el('div', 'zx-toast');
+    t.innerHTML = "<div class='tt'>" + esc(title) + "</div><div class='tb'>" + esc(bodyTxt) + "</div>";
+    t.addEventListener('click', function () { t.remove(); });
+    host.appendChild(t);
+    requestAnimationFrame(function () { t.classList.add('show'); });
+    setTimeout(function () { t.classList.remove('show'); setTimeout(function () { t.remove(); }, 300); }, 9000);
   }
 
   // ============================================================
@@ -987,6 +1007,20 @@
       pane.appendChild(asRow);
       api('/api/autostart').then(function (st2) { if (!st2) return; if (st2.enabled) asTog.classList.add('on'); if (!st2.supported) asTog.style.opacity = '.5'; asNote.textContent = st2.note || ''; }).catch(function () {});
       asTog.addEventListener('click', function () { var want = !asTog.classList.contains('on'); asNote.textContent = '...'; api('/api/autostart', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ enabled: want }) }).then(function (r) { asTog.classList.toggle('on', !!(r && r.enabled)); asNote.textContent = (r && r.note) || ''; }).catch(function () { asNote.textContent = T('Failed.'); }); });
+
+      // --- Proactive watchers ---
+      pane.appendChild(el('label', null, T('Proactive')));
+      var wRow = el('div'); wRow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+      var wTog = el('button', 'switch', "<span class='knob'></span>");
+      var wMin = el('input', 'inp'); wMin.type = 'number'; wMin.min = '1'; wMin.value = '5'; wMin.style.width = '60px';
+      var wNote = el('span', 'hint');
+      wRow.appendChild(wTog); wRow.appendChild(el('span', 'hint', T('Watch Outlook inbox'))); wRow.appendChild(el('span', 'hint', T('every'))); wRow.appendChild(wMin); wRow.appendChild(el('span', 'hint', T('min'))); wRow.appendChild(wNote);
+      pane.appendChild(wRow);
+      pane.appendChild(el('div', 'hint', T('Alert me about new email (toast + optional voice).')));
+      api('/api/watchers').then(function (w) { if (w && w.outlookUnread) { if (w.outlookUnread.enabled) wTog.classList.add('on'); wMin.value = w.outlookUnread.intervalMin || 5; } }).catch(function () {});
+      function saveWatch() { var en = wTog.classList.contains('on'); if (en && window.Notification && Notification.permission === 'default') { try { Notification.requestPermission(); } catch (e) {} } wNote.textContent = '...'; api('/api/watchers', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ outlookUnread: { enabled: en, intervalMin: Number(wMin.value) || 5 } }) }).then(function () { wNote.textContent = T('Saved.'); }).catch(function () { wNote.textContent = T('Failed.'); }); }
+      wTog.addEventListener('click', function () { wTog.classList.toggle('on'); saveWatch(); });
+      wMin.addEventListener('change', saveWatch);
 
       // --- Export setup (skills bundle; never includes secrets) ---
       pane.appendChild(el('label', null, T('Export setup')));
@@ -2275,6 +2309,21 @@
   // pre-existing canvas doesn't pop on every reload).
   var _canvasSeen = null;
   setInterval(function () { api('/api/canvas').then(function (d) { if (!d) return; if (_canvasSeen === null) { _canvasSeen = d.version; return; } if (d.version > _canvasSeen) { _canvasSeen = d.version; launchApp('canvas'); } }).catch(function () {}); }, 3000);
+  // Proactive notifications: poll the feed, toast new ones (baseline first poll so restarts don't replay).
+  var _notifSince = 0, _notifPrimed = false;
+  setInterval(function () {
+    api('/api/notifications?since=' + _notifSince).then(function (d) {
+      var ns = (d && d.notifications) || [];
+      ns.forEach(function (n) {
+        _notifSince = Math.max(_notifSince, n.id);
+        if (!_notifPrimed) return;
+        showToast(n.title, n.body, n.kind);
+        try { if (window.Notification && Notification.permission === 'granted') new Notification(n.title, { body: n.body }); } catch (e) {}
+        if (vGet('zx_voice_speak')) speak(n.title + '. ' + n.body);
+      });
+      _notifPrimed = true;
+    }).catch(function () {});
+  }, 12000);
   pollStatus(); setInterval(pollStatus, 15000);
   renderDesktop();
   // Restore the previous window session once agents are known (agent windows need the list);
