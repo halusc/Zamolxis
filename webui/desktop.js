@@ -32,7 +32,8 @@
     people: "<svg viewBox='0 0 24 24' fill='none' stroke='#7a5cd0' stroke-width='1.6'><circle cx='9' cy='8' r='3'/><path d='M3.5 19a5.5 5.5 0 0 1 11 0'/><path d='M16 6.5a3 3 0 0 1 0 5.8M17.5 19a5.5 5.5 0 0 0-3-4.9'/></svg>",
     notebook: "<svg viewBox='0 0 24 24' fill='none' stroke='#8e44ad' stroke-width='1.6'><rect x='5' y='3' width='14' height='18' rx='2'/><path d='M9 3v18M12 8h4M12 12h4'/></svg>",
     db: "<svg viewBox='0 0 24 24' fill='none' stroke='#2c7a4b' stroke-width='1.6'><ellipse cx='12' cy='5.5' rx='7' ry='2.5'/><path d='M5 5.5v13c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-13M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5'/></svg>",
-    hist: "<svg viewBox='0 0 24 24' fill='none' stroke='#d18b1f' stroke-width='1.6'><path d='M3.5 12a8.5 8.5 0 1 1 2.6 6.1'/><path d='M3.5 18v-4h4'/><path d='M12 8v4l3 2'/></svg>"
+    hist: "<svg viewBox='0 0 24 24' fill='none' stroke='#d18b1f' stroke-width='1.6'><path d='M3.5 12a8.5 8.5 0 1 1 2.6 6.1'/><path d='M3.5 18v-4h4'/><path d='M12 8v4l3 2'/></svg>",
+    canvas: "<svg viewBox='0 0 24 24' fill='none' stroke='#0a8a7a' stroke-width='1.6'><rect x='3' y='4' width='18' height='14' rx='2'/><path d='M3 14l5-4 4 3 4-4 5 4M12 20v1.5M9 21.5h6'/></svg>"
   };
 
   // Per-agent app icon: a colored rounded tile with the agent's initial (deterministic from the name).
@@ -126,6 +127,22 @@
     it: { 'Notes': 'Note', 'Database': 'Database', 'History': 'Cronologia', 'Mail': 'Posta', 'Calendar': 'Calendario', 'Contacts': 'Contatti', 'Tasks': 'Attività', 'Run': 'Esegui', 'Bookmarks': 'Segnalibri', 'Search': 'Cerca', 'no rows': 'nessuna riga' }
   };
   Object.keys(I18N_DISP).forEach(function (l) { if (I18N[l]) Object.keys(I18N_DISP[l]).forEach(function (k) { I18N[l][k] = I18N_DISP[l][k]; }); });
+  var I18N_VOICE = {
+    es: { 'Voice': 'Voz', 'Speak replies': 'Leer respuestas en voz alta', 'Wake word ("Zamolxis")': 'Palabra de activación ("Zamolxis")', 'Speak': 'Hablar', 'Talk to Zamolxis and hear replies (uses your browser speech engine).': 'Habla con Zamolxis y escucha las respuestas (usa el motor de voz del navegador).' },
+    fr: { 'Voice': 'Voix', 'Speak replies': 'Lire les réponses à voix haute', 'Wake word ("Zamolxis")': 'Mot de réveil (« Zamolxis »)', 'Speak': 'Parler', 'Talk to Zamolxis and hear replies (uses your browser speech engine).': 'Parlez à Zamolxis et écoutez les réponses (utilise le moteur vocal du navigateur).' },
+    de: { 'Voice': 'Stimme', 'Speak replies': 'Antworten vorlesen', 'Wake word ("Zamolxis")': 'Aktivierungswort („Zamolxis“)', 'Speak': 'Sprechen', 'Talk to Zamolxis and hear replies (uses your browser speech engine).': 'Sprechen Sie mit Zamolxis und hören Sie die Antworten (nutzt die Sprach-Engine des Browsers).' },
+    ro: { 'Voice': 'Voce', 'Speak replies': 'Citește răspunsurile cu voce', 'Wake word ("Zamolxis")': 'Cuvânt de activare („Zamolxis”)', 'Speak': 'Vorbește', 'Talk to Zamolxis and hear replies (uses your browser speech engine).': 'Vorbește cu Zamolxis și ascultă răspunsurile (folosește motorul vocal al browserului).' },
+    it: { 'Voice': 'Voce', 'Speak replies': 'Leggi le risposte ad alta voce', 'Wake word ("Zamolxis")': 'Parola di attivazione ("Zamolxis")', 'Speak': 'Parla', 'Talk to Zamolxis and hear replies (uses your browser speech engine).': 'Parla con Zamolxis e ascolta le risposte (usa il motore vocale del browser).' }
+  };
+  Object.keys(I18N_VOICE).forEach(function (l) { if (I18N[l]) Object.keys(I18N_VOICE[l]).forEach(function (k) { I18N[l][k] = I18N_VOICE[l][k]; }); });
+  var I18N_WATCH = {
+    es: { 'Proactive': 'Proactivo', 'Watch Outlook inbox': 'Vigilar la bandeja de Outlook', 'Alert me about new email (toast + optional voice).': 'Avísame sobre correos nuevos (aviso + voz opcional).', 'every': 'cada', 'min': 'min' },
+    fr: { 'Proactive': 'Proactif', 'Watch Outlook inbox': 'Surveiller la boîte Outlook', 'Alert me about new email (toast + optional voice).': 'Me prévenir des nouveaux e-mails (notification + voix en option).', 'every': 'toutes les', 'min': 'min' },
+    de: { 'Proactive': 'Proaktiv', 'Watch Outlook inbox': 'Outlook-Posteingang überwachen', 'Alert me about new email (toast + optional voice).': 'Bei neuen E-Mails benachrichtigen (Hinweis + optional Stimme).', 'every': 'alle', 'min': 'Min' },
+    ro: { 'Proactive': 'Proactiv', 'Watch Outlook inbox': 'Monitorizează inboxul Outlook', 'Alert me about new email (toast + optional voice).': 'Anunță-mă despre e-mailuri noi (notificare + voce opțional).', 'every': 'la fiecare', 'min': 'min' },
+    it: { 'Proactive': 'Proattivo', 'Watch Outlook inbox': 'Monitora la posta di Outlook', 'Alert me about new email (toast + optional voice).': 'Avvisami delle nuove email (avviso + voce opzionale).', 'every': 'ogni', 'min': 'min' }
+  };
+  Object.keys(I18N_WATCH).forEach(function (l) { if (I18N[l]) Object.keys(I18N_WATCH[l]).forEach(function (k) { I18N[l][k] = I18N_WATCH[l][k]; }); });
   function langChoice() { return localStorage.getItem('zx_lang') || 'en'; }
   function T(s) { var L = langChoice(); if (L === 'en') return s; var d = I18N[L]; return (d && d[s]) || s; }
   function Tf(s, vars) { var out = T(s); if (vars) Object.keys(vars).forEach(function (k) { out = out.split('{' + k + '}').join(vars[k]); }); return out; }
@@ -134,6 +151,59 @@
     var lbl = document.getElementById('startmenu-label'); if (lbl) lbl.textContent = T('All apps');
     var si = document.getElementById('start-search-input'); if (si) si.placeholder = T('Search apps');
     document.documentElement.lang = langChoice();
+  }
+
+  // ---------- Voice: speak (TTS) + listen (STT) + wake word, via the browser Web Speech API ----------
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  function voiceSupported() { return !!SR; }
+  function ttsSupported() { return 'speechSynthesis' in window; }
+  function vGet(k) { return localStorage.getItem(k) === '1'; }
+  function vSet(k, on) { localStorage.setItem(k, on ? '1' : '0'); }
+  function voiceLang() { return ({ en: 'en-US', es: 'es-ES', fr: 'fr-FR', de: 'de-DE', ro: 'ro-RO', it: 'it-IT' })[langChoice()] || 'en-US'; }
+  function speak(textRaw) {
+    if (!vGet('zx_voice_speak') || !ttsSupported() || !textRaw) return;
+    try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(String(textRaw).slice(0, 700)); u.lang = voiceLang(); speechSynthesis.speak(u); } catch (e) {}
+  }
+  function listenOnce(onText, onEnd) {
+    if (!voiceSupported()) return null;
+    var r = new SR(); r.lang = voiceLang(); r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
+    var finalT = '';
+    r.onresult = function (e) { var t = ''; for (var i = 0; i < e.results.length; i++) { t += e.results[i][0].transcript; if (e.results[i].isFinal) finalT = t; } onText(t); };
+    r.onend = function () { if (onEnd) onEnd(finalT.trim()); };
+    r.onerror = function () {};
+    try { r.start(); } catch (e) {}
+    return r;
+  }
+  var wakeRec = null, wakeFired = 0;
+  function startWake() {
+    if (!voiceSupported() || !vGet('zx_voice_wake') || wakeRec) return;
+    var r = new SR(); r.lang = voiceLang(); r.continuous = true; r.interimResults = true; wakeRec = r;
+    r.onresult = function (e) {
+      var t = ''; for (var i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript;
+      if (/\b(zamolxis|hey zam|ok zam|hey claude)\b/i.test(t) && Date.now() - wakeFired > 3500) { wakeFired = Date.now(); onWake(); }
+    };
+    r.onend = function () { wakeRec = null; if (vGet('zx_voice_wake')) setTimeout(startWake, 600); };
+    r.onerror = function () { wakeRec = null; };
+    try { r.start(); } catch (e) { wakeRec = null; }
+  }
+  function stopWakeRec() { if (wakeRec) { try { wakeRec.abort(); } catch (e) {} wakeRec = null; } }
+  function onWake() {
+    stopWakeRec();
+    var w = launchApp('zamolxis');
+    speak('Yes?');
+    setTimeout(function () { if (w && w._voiceCapture) w._voiceCapture(); else if (vGet('zx_voice_wake')) startWake(); }, 800);
+  }
+
+  // ---------- Proactive notifications (toasts + browser Notification + optional voice) ----------
+  function showToast(title, bodyTxt, kind) {
+    var host = document.getElementById('zx-toasts');
+    if (!host) { host = el('div'); host.id = 'zx-toasts'; document.body.appendChild(host); }
+    var t = el('div', 'zx-toast');
+    t.innerHTML = "<div class='tt'>" + esc(title) + "</div><div class='tb'>" + esc(bodyTxt) + "</div>";
+    t.addEventListener('click', function () { t.remove(); });
+    host.appendChild(t);
+    requestAnimationFrame(function () { t.classList.add('show'); });
+    setTimeout(function () { t.classList.remove('show'); setTimeout(function () { t.remove(); }, 300); }, 9000);
   }
 
   // ============================================================
@@ -402,6 +472,7 @@
     { id: 'notes', name: 'Notes', iconSvg: ICON.notebook, cat: 'Office', skill: 'onenote-notes', kind: 'native' },
     { id: 'database', name: 'Database', iconSvg: ICON.db, cat: 'Utilities', skill: 'sql-databases', kind: 'native' },
     { id: 'history', name: 'History', iconSvg: ICON.hist, cat: 'Utilities', skill: 'browser-history', kind: 'native' },
+    { id: 'canvas', name: 'Canvas', iconSvg: ICON.canvas, cat: 'Utilities', skill: 'canvas', kind: 'native' },
     { id: 'sftp', name: 'SFTP Client', iconSvg: ICON.net, cat: 'Network', skill: 'sftp-client', kind: 'native' },
     { id: 'telnet', name: 'Telnet', iconSvg: ICON.term, cat: 'Network', skill: 'telnet-client', kind: 'native' },
     { id: 'messages', name: 'Messages', iconSvg: ICON.chat, cat: 'Communication', skill: 'chat-clients', kind: 'native' }
@@ -468,6 +539,7 @@
       else if (appId === 'notes') spec = { appId: appId, title: T('Notes'), iconSvg: ICON.notebook, w: 820, h: 600, onMount: mountNotes };
       else if (appId === 'database') spec = { appId: appId, title: T('Database'), iconSvg: ICON.db, w: 880, h: 620, onMount: mountDatabase };
       else if (appId === 'history') spec = { appId: appId, title: T('History'), iconSvg: ICON.hist, w: 760, h: 600, onMount: mountBrowserHistory };
+      else if (appId === 'canvas') spec = { appId: appId, title: T('Canvas'), iconSvg: ICON.canvas, w: 800, h: 600, onMount: mountCanvas };
       else spec = { appId: appId, title: T(ca.name), iconSvg: ca.iconSvg, w: 780, h: 620, onMount: function (b, w) { mountEmptyViewer(b, w, ca); } };
     }
     else if (app.kind === 'agent') spec = { appId: appId, title: app.name, iconSvg: app.iconSvg || agentIconSvg(app.name), w: 520, h: 560, onMount: function (b, w) { mountAgent(b, w, app.agent); } };
@@ -544,7 +616,9 @@
     var fileIn = el('input'); fileIn.type = 'file'; fileIn.multiple = true; fileIn.style.display = 'none';
     var ta = el('textarea'); ta.placeholder = (opts && opts.placeholder ? opts.placeholder : T('Message') + ' ' + AGENT_NAME) + '...';
     var send = el('button'); send.textContent = T('Send');
-    inputRow.appendChild(attach); inputRow.appendChild(ta); inputRow.appendChild(send);
+    var mic = null;
+    if (voiceSupported() && opts && opts.route) { mic = el('button', 'chat-mic'); mic.textContent = '🎤'; mic.title = T('Speak'); }
+    inputRow.appendChild(attach); if (mic) inputRow.appendChild(mic); inputRow.appendChild(ta); inputRow.appendChild(send);
     wrap.appendChild(bar); wrap.appendChild(log); wrap.appendChild(chips); wrap.appendChild(inputRow);
     body.appendChild(wrap); body.appendChild(fileIn);
     var pending = [];
@@ -577,7 +651,7 @@
         var m; try { m = JSON.parse(ev.data); } catch (e) { return; }
         if (m.type === 'status') return;
         if (m.type === 'chunk') { if (!streamEl) streamEl = addMsg(AGENT_NAME, '', 'bot', null, false); streamEl.textContent += m.text; log.scrollTop = log.scrollHeight; return; }
-        if (m.type === 'reply') { if (streamEl) { streamEl.textContent = m.text; streamEl = null; pushChatLog(logKey, { who: AGENT_NAME, text: m.text, cls: 'bot' }); } else { addMsg(AGENT_NAME, m.text, 'bot'); } stat.textContent = '● ' + T('connected'); }
+        if (m.type === 'reply') { if (streamEl) { streamEl.textContent = m.text; streamEl = null; pushChatLog(logKey, { who: AGENT_NAME, text: m.text, cls: 'bot' }); } else { addMsg(AGENT_NAME, m.text, 'bot'); } stat.textContent = '● ' + T('connected'); speak(m.text); }
       };
     }
     connect();
@@ -615,6 +689,11 @@
     }
     send.addEventListener('click', doSend);
     ta.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); } });
+    if (mic) {
+      function startPTT() { stopWakeRec(); mic.classList.add('rec'); listenOnce(function (t) { ta.value = t; }, function (f) { mic.classList.remove('rec'); if (f) { ta.value = f; doSend(); } if (vGet('zx_voice_wake')) startWake(); }); }
+      mic.addEventListener('click', startPTT);
+      win._voiceCapture = startPTT;
+    }
     if (win.setMenus) win.setMenus([
       { label: T('File'), items: [ { label: T('Clear conversation'), action: function () { if (confirm(T('Clear conversation') + '?')) { log.innerHTML = ''; try { localStorage.removeItem(logKey); } catch (e) {} api('/api/forget', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cid: cid }) }).catch(function () {}); } } } ] },
       { label: T('Help'), items: [ { label: T('Help & Guide'), action: function () { launchApp('help'); } } ] }
@@ -691,6 +770,21 @@
       seg3.appendChild(b);
     });
     f3.appendChild(seg3); pane.appendChild(f3);
+
+    if (voiceSupported() || ttsSupported()) {
+      var fv = el('div', 'field');
+      fv.appendChild(el('label', null, T('Voice')));
+      fv.appendChild(el('div', 'hint', T('Talk to Zamolxis and hear replies (uses your browser speech engine).')));
+      function vrow(key, label, onChange) {
+        var row = el('div'); row.style.cssText = 'display:flex;align-items:center;gap:8px;margin:5px 0';
+        var tg = el('button', 'switch' + (vGet(key) ? ' on' : ''), "<span class='knob'></span>");
+        tg.addEventListener('click', function () { var on = !tg.classList.contains('on'); tg.classList.toggle('on', on); vSet(key, on); if (onChange) onChange(on); });
+        row.appendChild(tg); row.appendChild(el('span', 'hint', label)); return row;
+      }
+      if (ttsSupported()) fv.appendChild(vrow('zx_voice_speak', T('Speak replies')));
+      if (voiceSupported()) fv.appendChild(vrow('zx_voice_wake', T('Wake word ("Zamolxis")'), function (on) { if (on) startWake(); else stopWakeRec(); }));
+      pane.appendChild(fv);
+    }
   }
 
   function tabEngine(pane) {
@@ -913,6 +1007,20 @@
       pane.appendChild(asRow);
       api('/api/autostart').then(function (st2) { if (!st2) return; if (st2.enabled) asTog.classList.add('on'); if (!st2.supported) asTog.style.opacity = '.5'; asNote.textContent = st2.note || ''; }).catch(function () {});
       asTog.addEventListener('click', function () { var want = !asTog.classList.contains('on'); asNote.textContent = '...'; api('/api/autostart', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ enabled: want }) }).then(function (r) { asTog.classList.toggle('on', !!(r && r.enabled)); asNote.textContent = (r && r.note) || ''; }).catch(function () { asNote.textContent = T('Failed.'); }); });
+
+      // --- Proactive watchers ---
+      pane.appendChild(el('label', null, T('Proactive')));
+      var wRow = el('div'); wRow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+      var wTog = el('button', 'switch', "<span class='knob'></span>");
+      var wMin = el('input', 'inp'); wMin.type = 'number'; wMin.min = '1'; wMin.value = '5'; wMin.style.width = '60px';
+      var wNote = el('span', 'hint');
+      wRow.appendChild(wTog); wRow.appendChild(el('span', 'hint', T('Watch Outlook inbox'))); wRow.appendChild(el('span', 'hint', T('every'))); wRow.appendChild(wMin); wRow.appendChild(el('span', 'hint', T('min'))); wRow.appendChild(wNote);
+      pane.appendChild(wRow);
+      pane.appendChild(el('div', 'hint', T('Alert me about new email (toast + optional voice).')));
+      api('/api/watchers').then(function (w) { if (w && w.outlookUnread) { if (w.outlookUnread.enabled) wTog.classList.add('on'); wMin.value = w.outlookUnread.intervalMin || 5; } }).catch(function () {});
+      function saveWatch() { var en = wTog.classList.contains('on'); if (en && window.Notification && Notification.permission === 'default') { try { Notification.requestPermission(); } catch (e) {} } wNote.textContent = '...'; api('/api/watchers', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ outlookUnread: { enabled: en, intervalMin: Number(wMin.value) || 5 } }) }).then(function () { wNote.textContent = T('Saved.'); }).catch(function () { wNote.textContent = T('Failed.'); }); }
+      wTog.addEventListener('click', function () { wTog.classList.toggle('on'); saveWatch(); });
+      wMin.addEventListener('change', saveWatch);
 
       // --- Export setup (skills bundle; never includes secrets) ---
       pane.appendChild(el('label', null, T('Export setup')));
@@ -1960,6 +2068,27 @@
     win.setMenus([{ label: T('View'), items: [{ label: T('History'), action: function () { seg.select('history'); } }, { label: T('Bookmarks'), action: function () { seg.select('bookmarks'); } }] }]);
   }
 
+  // Agent Canvas: renders the latest agent-pushed HTML in a sandboxed iframe; polls for updates.
+  function mountCanvas(body, win) {
+    body.style.padding = '0';
+    var EMPTY = '<body style="font:14px system-ui,sans-serif;color:#888;display:grid;place-items:center;height:100vh;margin:0;text-align:center;padding:20px">Nothing here yet — ask ' + esc(AGENT_NAME) + ' to show a chart, table, dashboard or diagram.</body>';
+    var frame = el('iframe'); frame.setAttribute('sandbox', 'allow-scripts allow-popups allow-forms'); frame.style.cssText = 'width:100%;height:100%;border:0;background:#fff';
+    body.appendChild(frame);
+    var lastV = -1;
+    function tick() {
+      if (win.closed) return;
+      api('/api/canvas').then(function (d) {
+        if (!d || d.version === lastV) return;
+        lastV = d.version;
+        win._appTitle = d.title || 'Canvas'; win.titleEl.textContent = win._appTitle;
+        frame.srcdoc = (d.version > 0 && d.html) ? d.html : EMPTY;
+        syncTaskbar();
+      }).catch(function () {});
+    }
+    tick(); win._canvasIv = setInterval(tick, 2500);
+    win.cleanup.push(function () { clearInterval(win._canvasIv); });
+  }
+
   // ---------- per-app chat-window setting (the "is chat needed?" toggle) ----------
   function appChatEnabled(appId, def) { var v = localStorage.getItem('zx_chat_' + appId); return v === null ? !!def : v === '1'; }
   function setAppChat(appId, on) { localStorage.setItem('zx_chat_' + appId, on ? '1' : '0'); }
@@ -2175,6 +2304,26 @@
   applyStaticI18n();
   if (window.matchMedia) { try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { if (modeChoice() === 'auto') applyMode(); }); } catch (e) {} }
   tickClock(); setInterval(tickClock, 10000);
+  if (vGet('zx_voice_wake')) setTimeout(startWake, 1200);
+  // Auto-open/raise the Canvas when the agent pushes new content (baseline the first poll so a
+  // pre-existing canvas doesn't pop on every reload).
+  var _canvasSeen = null;
+  setInterval(function () { api('/api/canvas').then(function (d) { if (!d) return; if (_canvasSeen === null) { _canvasSeen = d.version; return; } if (d.version > _canvasSeen) { _canvasSeen = d.version; launchApp('canvas'); } }).catch(function () {}); }, 3000);
+  // Proactive notifications: poll the feed, toast new ones (baseline first poll so restarts don't replay).
+  var _notifSince = 0, _notifPrimed = false;
+  setInterval(function () {
+    api('/api/notifications?since=' + _notifSince).then(function (d) {
+      var ns = (d && d.notifications) || [];
+      ns.forEach(function (n) {
+        _notifSince = Math.max(_notifSince, n.id);
+        if (!_notifPrimed) return;
+        showToast(n.title, n.body, n.kind);
+        try { if (window.Notification && Notification.permission === 'granted') new Notification(n.title, { body: n.body }); } catch (e) {}
+        if (vGet('zx_voice_speak')) speak(n.title + '. ' + n.body);
+      });
+      _notifPrimed = true;
+    }).catch(function () {});
+  }, 12000);
   pollStatus(); setInterval(pollStatus, 15000);
   renderDesktop();
   // Restore the previous window session once agents are known (agent windows need the list);
