@@ -424,3 +424,9 @@ table.sql-grid { border-collapse: collapse; font-size: 12.5px; width: 100%; }
 table.sql-grid th, table.sql-grid td { border: 1px solid rgba(128,128,128,.3); padding: 3px 8px; text-align: left; white-space: nowrap; }
 table.sql-grid th { position: sticky; top: 0; background: rgba(128,128,128,.18); font-weight: 600; }
 table.sql-grid tr:nth-child(even) td { background: rgba(128,128,128,.06); }
+
+/* ===== Voice mic button ===== */
+.chat-mic { padding: 0 12px; background: #e5e5e5; border: 0; border-radius: 8px; cursor: pointer; font-size: 15px; }
+body[data-mode="dark"] .chat-mic { background: #3a3a3a; }
+.chat-mic.rec { background: #d13438; color: #fff; animation: zx-pulse 1s ease-in-out infinite; }
+@keyframes zx-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(209,52,56,.5); } 50% { box-shadow: 0 0 0 6px rgba(209,52,56,0); } }

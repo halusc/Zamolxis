@@ -126,6 +126,14 @@
     it: { 'Notes': 'Note', 'Database': 'Database', 'History': 'Cronologia', 'Mail': 'Posta', 'Calendar': 'Calendario', 'Contacts': 'Contatti', 'Tasks': 'Attività', 'Run': 'Esegui', 'Bookmarks': 'Segnalibri', 'Search': 'Cerca', 'no rows': 'nessuna riga' }
   };
   Object.keys(I18N_DISP).forEach(function (l) { if (I18N[l]) Object.keys(I18N_DISP[l]).forEach(function (k) { I18N[l][k] = I18N_DISP[l][k]; }); });
+  var I18N_VOICE = {
+    es: { 'Voice': 'Voz', 'Speak replies': 'Leer respuestas en voz alta', 'Wake word ("Zamolxis")': 'Palabra de activación ("Zamolxis")', 'Speak': 'Hablar', 'Talk to Zamolxis and hear replies (uses your browser speech engine).': 'Habla con Zamolxis y escucha las respuestas (usa el motor de voz del navegador).' },
+    fr: { 'Voice': 'Voix', 'Speak replies': 'Lire les réponses à voix haute', 'Wake word ("Zamolxis")': 'Mot de réveil (« Zamolxis »)', 'Speak': 'Parler', 'Talk to Zamolxis and hear replies (uses your browser speech engine).': 'Parlez à Zamolxis et écoutez les réponses (utilise le moteur vocal du navigateur).' },
+    de: { 'Voice': 'Stimme', 'Speak replies': 'Antworten vorlesen', 'Wake word ("Zamolxis")': 'Aktivierungswort („Zamolxis“)', 'Speak': 'Sprechen', 'Talk to Zamolxis and hear replies (uses your browser speech engine).': 'Sprechen Sie mit Zamolxis und hören Sie die Antworten (nutzt die Sprach-Engine des Browsers).' },
+    ro: { 'Voice': 'Voce', 'Speak replies': 'Citește răspunsurile cu voce', 'Wake word ("Zamolxis")': 'Cuvânt de activare („Zamolxis”)', 'Speak': 'Vorbește', 'Talk to Zamolxis and hear replies (uses your browser speech engine).': 'Vorbește cu Zamolxis și ascultă răspunsurile (folosește motorul vocal al browserului).' },
+    it: { 'Voice': 'Voce', 'Speak replies': 'Leggi le risposte ad alta voce', 'Wake word ("Zamolxis")': 'Parola di attivazione ("Zamolxis")', 'Speak': 'Parla', 'Talk to Zamolxis and hear replies (uses your browser speech engine).': 'Parla con Zamolxis e ascolta le risposte (usa il motore vocale del browser).' }
+  };
+  Object.keys(I18N_VOICE).forEach(function (l) { if (I18N[l]) Object.keys(I18N_VOICE[l]).forEach(function (k) { I18N[l][k] = I18N_VOICE[l][k]; }); });
   function langChoice() { return localStorage.getItem('zx_lang') || 'en'; }
   function T(s) { var L = langChoice(); if (L === 'en') return s; var d = I18N[L]; return (d && d[s]) || s; }
   function Tf(s, vars) { var out = T(s); if (vars) Object.keys(vars).forEach(function (k) { out = out.split('{' + k + '}').join(vars[k]); }); return out; }
@@ -134,6 +142,47 @@
     var lbl = document.getElementById('startmenu-label'); if (lbl) lbl.textContent = T('All apps');
     var si = document.getElementById('start-search-input'); if (si) si.placeholder = T('Search apps');
     document.documentElement.lang = langChoice();
+  }
+
+  // ---------- Voice: speak (TTS) + listen (STT) + wake word, via the browser Web Speech API ----------
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  function voiceSupported() { return !!SR; }
+  function ttsSupported() { return 'speechSynthesis' in window; }
+  function vGet(k) { return localStorage.getItem(k) === '1'; }
+  function vSet(k, on) { localStorage.setItem(k, on ? '1' : '0'); }
+  function voiceLang() { return ({ en: 'en-US', es: 'es-ES', fr: 'fr-FR', de: 'de-DE', ro: 'ro-RO', it: 'it-IT' })[langChoice()] || 'en-US'; }
+  function speak(textRaw) {
+    if (!vGet('zx_voice_speak') || !ttsSupported() || !textRaw) return;
+    try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(String(textRaw).slice(0, 700)); u.lang = voiceLang(); speechSynthesis.speak(u); } catch (e) {}
+  }
+  function listenOnce(onText, onEnd) {
+    if (!voiceSupported()) return null;
+    var r = new SR(); r.lang = voiceLang(); r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
+    var finalT = '';
+    r.onresult = function (e) { var t = ''; for (var i = 0; i < e.results.length; i++) { t += e.results[i][0].transcript; if (e.results[i].isFinal) finalT = t; } onText(t); };
+    r.onend = function () { if (onEnd) onEnd(finalT.trim()); };
+    r.onerror = function () {};
+    try { r.start(); } catch (e) {}
+    return r;
+  }
+  var wakeRec = null, wakeFired = 0;
+  function startWake() {
+    if (!voiceSupported() || !vGet('zx_voice_wake') || wakeRec) return;
+    var r = new SR(); r.lang = voiceLang(); r.continuous = true; r.interimResults = true; wakeRec = r;
+    r.onresult = function (e) {
+      var t = ''; for (var i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript;
+      if (/\b(zamolxis|hey zam|ok zam|hey claude)\b/i.test(t) && Date.now() - wakeFired > 3500) { wakeFired = Date.now(); onWake(); }
+    };
+    r.onend = function () { wakeRec = null; if (vGet('zx_voice_wake')) setTimeout(startWake, 600); };
+    r.onerror = function () { wakeRec = null; };
+    try { r.start(); } catch (e) { wakeRec = null; }
+  }
+  function stopWakeRec() { if (wakeRec) { try { wakeRec.abort(); } catch (e) {} wakeRec = null; } }
+  function onWake() {
+    stopWakeRec();
+    var w = launchApp('zamolxis');
+    speak('Yes?');
+    setTimeout(function () { if (w && w._voiceCapture) w._voiceCapture(); else if (vGet('zx_voice_wake')) startWake(); }, 800);
   }
 
   // ============================================================
@@ -544,7 +593,9 @@
     var fileIn = el('input'); fileIn.type = 'file'; fileIn.multiple = true; fileIn.style.display = 'none';
     var ta = el('textarea'); ta.placeholder = (opts && opts.placeholder ? opts.placeholder : T('Message') + ' ' + AGENT_NAME) + '...';
     var send = el('button'); send.textContent = T('Send');
-    inputRow.appendChild(attach); inputRow.appendChild(ta); inputRow.appendChild(send);
+    var mic = null;
+    if (voiceSupported() && opts && opts.route) { mic = el('button', 'chat-mic'); mic.textContent = '🎤'; mic.title = T('Speak'); }
+    inputRow.appendChild(attach); if (mic) inputRow.appendChild(mic); inputRow.appendChild(ta); inputRow.appendChild(send);
     wrap.appendChild(bar); wrap.appendChild(log); wrap.appendChild(chips); wrap.appendChild(inputRow);
     body.appendChild(wrap); body.appendChild(fileIn);
     var pending = [];
@@ -577,7 +628,7 @@
         var m; try { m = JSON.parse(ev.data); } catch (e) { return; }
         if (m.type === 'status') return;
         if (m.type === 'chunk') { if (!streamEl) streamEl = addMsg(AGENT_NAME, '', 'bot', null, false); streamEl.textContent += m.text; log.scrollTop = log.scrollHeight; return; }
-        if (m.type === 'reply') { if (streamEl) { streamEl.textContent = m.text; streamEl = null; pushChatLog(logKey, { who: AGENT_NAME, text: m.text, cls: 'bot' }); } else { addMsg(AGENT_NAME, m.text, 'bot'); } stat.textContent = '● ' + T('connected'); }
+        if (m.type === 'reply') { if (streamEl) { streamEl.textContent = m.text; streamEl = null; pushChatLog(logKey, { who: AGENT_NAME, text: m.text, cls: 'bot' }); } else { addMsg(AGENT_NAME, m.text, 'bot'); } stat.textContent = '● ' + T('connected'); speak(m.text); }
       };
     }
     connect();
@@ -615,6 +666,11 @@
     }
     send.addEventListener('click', doSend);
     ta.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); } });
+    if (mic) {
+      function startPTT() { stopWakeRec(); mic.classList.add('rec'); listenOnce(function (t) { ta.value = t; }, function (f) { mic.classList.remove('rec'); if (f) { ta.value = f; doSend(); } if (vGet('zx_voice_wake')) startWake(); }); }
+      mic.addEventListener('click', startPTT);
+      win._voiceCapture = startPTT;
+    }
     if (win.setMenus) win.setMenus([
       { label: T('File'), items: [ { label: T('Clear conversation'), action: function () { if (confirm(T('Clear conversation') + '?')) { log.innerHTML = ''; try { localStorage.removeItem(logKey); } catch (e) {} api('/api/forget', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cid: cid }) }).catch(function () {}); } } } ] },
       { label: T('Help'), items: [ { label: T('Help & Guide'), action: function () { launchApp('help'); } } ] }
@@ -691,6 +747,21 @@
       seg3.appendChild(b);
     });
     f3.appendChild(seg3); pane.appendChild(f3);
+
+    if (voiceSupported() || ttsSupported()) {
+      var fv = el('div', 'field');
+      fv.appendChild(el('label', null, T('Voice')));
+      fv.appendChild(el('div', 'hint', T('Talk to Zamolxis and hear replies (uses your browser speech engine).')));
+      function vrow(key, label, onChange) {
+        var row = el('div'); row.style.cssText = 'display:flex;align-items:center;gap:8px;margin:5px 0';
+        var tg = el('button', 'switch' + (vGet(key) ? ' on' : ''), "<span class='knob'></span>");
+        tg.addEventListener('click', function () { var on = !tg.classList.contains('on'); tg.classList.toggle('on', on); vSet(key, on); if (onChange) onChange(on); });
+        row.appendChild(tg); row.appendChild(el('span', 'hint', label)); return row;
+      }
+      if (ttsSupported()) fv.appendChild(vrow('zx_voice_speak', T('Speak replies')));
+      if (voiceSupported()) fv.appendChild(vrow('zx_voice_wake', T('Wake word ("Zamolxis")'), function (on) { if (on) startWake(); else stopWakeRec(); }));
+      pane.appendChild(fv);
+    }
   }
 
   function tabEngine(pane) {
@@ -2175,6 +2246,7 @@
   applyStaticI18n();
   if (window.matchMedia) { try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { if (modeChoice() === 'auto') applyMode(); }); } catch (e) {} }
   tickClock(); setInterval(tickClock, 10000);
+  if (vGet('zx_voice_wake')) setTimeout(startWake, 1200);
   pollStatus(); setInterval(pollStatus, 15000);
   renderDesktop();
   // Restore the previous window session once agents are known (agent windows need the list);
