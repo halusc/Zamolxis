@@ -56,6 +56,57 @@ try {
   $action = $env:ZXOL_ACTION
   $count = 0; [void][int]::TryParse($env:ZXOL_COUNT, [ref]$count); if ($count -le 0 -or $count -gt 50) { $count = 15 }
 
+  if ($action -eq 'calendar') {
+    $cal = $ns.GetDefaultFolder(9)
+    $items = $cal.Items
+    $items.IncludeRecurrences = $true
+    $items.Sort('[Start]')
+    $days = 0; [void][int]::TryParse($env:ZXOL_DAYS, [ref]$days); if ($days -le 0 -or $days -gt 60) { $days = 7 }
+    $ci = [System.Globalization.CultureInfo]::GetCultureInfo('en-US')
+    $startS = (Get-Date).Date.ToString('MM/dd/yyyy hh:mm tt', $ci)
+    $endS = (Get-Date).Date.AddDays($days).ToString('MM/dd/yyyy hh:mm tt', $ci)
+    $res = $items.Restrict("[Start] <= '" + $endS + "' AND [End] >= '" + $startS + "'")
+    $out = @(); $i = 0
+    foreach ($a in $res) {
+      try {
+        $out += [pscustomobject]@{ subject = [string]$a.Subject; start = $a.Start.ToString('yyyy-MM-dd HH:mm'); end = $a.End.ToString('yyyy-MM-dd HH:mm'); location = [string]$a.Location; organizer = [string]$a.Organizer; allDay = [bool]$a.AllDayEvent }
+      } catch {}
+      $i++; if ($i -ge 40) { break }
+    }
+    Out-Json @{ events = $out; days = $days }
+    exit 0
+  }
+
+  if ($action -eq 'contacts') {
+    $cf = $ns.GetDefaultFolder(10)
+    $q = $env:ZXOL_QUERY
+    $out = @(); $i = 0
+    foreach ($c in $cf.Items) {
+      if ($c.Class -ne 40) { continue }
+      $hay = ('' + $c.FullName + ' ' + $c.CompanyName + ' ' + $c.Email1Address)
+      if ($q -and ($hay -inotmatch [regex]::Escape($q))) { continue }
+      $out += [pscustomobject]@{ name = [string]$c.FullName; email = [string]$c.Email1Address; phone = [string]$c.BusinessTelephoneNumber; mobile = [string]$c.MobileTelephoneNumber; company = [string]$c.CompanyName }
+      $i++; if ($i -ge $count) { break }
+    }
+    Out-Json @{ contacts = $out }
+    exit 0
+  }
+
+  if ($action -eq 'tasks') {
+    $tf = $ns.GetDefaultFolder(13)
+    $res = $tf.Items.Restrict('[Complete] = False')
+    $out = @(); $i = 0
+    foreach ($t in $res) {
+      if ($t.Class -ne 48) { continue }
+      $due = ''
+      try { if ($t.DueDate.Year -lt 4000) { $due = $t.DueDate.ToString('yyyy-MM-dd') } } catch {}
+      $out += [pscustomobject]@{ subject = [string]$t.Subject; due = $due }
+      $i++; if ($i -ge $count) { break }
+    }
+    Out-Json @{ tasks = $out }
+    exit 0
+  }
+
   if ($action -eq 'folders') {
     $out = @()
     foreach ($s in $ns.Folders) {
@@ -144,6 +195,41 @@ function runPs(env: Record<string, string>): Promise<string> {
       resolve(JSON.stringify({ error: String(e) }));
     });
   });
+}
+
+/** Calendar / contacts / tasks from the same local Outlook profile. */
+export async function outlookPim(args: { action: string; days?: number; query?: string; count?: number }): Promise<string> {
+  if (!outlookAvailable()) return 'outlook_pim only works on the Windows machine where classic Outlook desktop is installed.';
+  const action = ['calendar', 'contacts', 'tasks'].includes(args.action) ? args.action : 'calendar';
+  const raw = await runPs({
+    ZXOL_ACTION: action,
+    ZXOL_DAYS: String(args.days || 7),
+    ZXOL_QUERY: args.query || '',
+    ZXOL_COUNT: String(args.count || 25),
+    ZXOL_FOLDER: '',
+    ZXOL_UNREAD: '0',
+    ZXOL_ID: '',
+  });
+  let d: { error?: string; days?: number; events?: Array<{ subject: string; start: string; end: string; location: string; organizer: string; allDay: boolean }>; contacts?: Array<{ name: string; email: string; phone: string; mobile: string; company: string }>; tasks?: Array<{ subject: string; due: string }> };
+  try {
+    d = JSON.parse(raw);
+  } catch {
+    return 'Outlook bridge error: ' + raw.slice(0, 300);
+  }
+  if (d.error) return 'Outlook: ' + d.error;
+  if (d.events) {
+    if (!d.events.length) return `No calendar events in the next ${d.days} day(s).`;
+    return `Calendar — next ${d.days} day(s):\n` + d.events.map((e, i) => `${i + 1}. ${e.allDay ? '[all day] ' : ''}${e.start} → ${e.end} — ${e.subject}${e.location ? ' @ ' + e.location : ''}${e.organizer ? ' (organizer: ' + e.organizer + ')' : ''}`).join('\n');
+  }
+  if (d.contacts) {
+    if (!d.contacts.length) return args.query ? `No contacts matching "${args.query}".` : 'No contacts found.';
+    return d.contacts.map((c, i) => `${i + 1}. ${c.name}${c.company ? ' — ' + c.company : ''}${c.email ? ' — ' + c.email : ''}${c.phone ? ' — tel ' + c.phone : ''}${c.mobile ? ' — mob ' + c.mobile : ''}`).join('\n');
+  }
+  if (d.tasks) {
+    if (!d.tasks.length) return 'No open tasks.';
+    return 'Open tasks:\n' + d.tasks.map((t, i) => `${i + 1}. ${t.subject}${t.due ? ' (due ' + t.due + ')' : ''}`).join('\n');
+  }
+  return 'No data.';
 }
 
 /** Run an Outlook mail action and return model-friendly TEXT. */

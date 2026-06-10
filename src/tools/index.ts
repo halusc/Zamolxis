@@ -13,7 +13,8 @@ import { runWebSearch, localSearchAvailable, runHaService, haConfigured } from '
 import { setTempName } from '../core/displayName.js';
 import { buildPaidTools } from './paid.js';
 import { readInbox, resolveAccount, listAccountNames, addAccount } from './email.js';
-import { outlookMail } from '../core/outlookLocal.js';
+import { outlookMail, outlookPim } from '../core/outlookLocal.js';
+import { onenoteRead, sqlQuery, browserHistory, archiveTool } from '../core/localApps.js';
 import type { AgentStore } from '../core/agents.js';
 
 /** Live conversation context, captured per agent turn so tools deliver to the right place. */
@@ -493,6 +494,64 @@ export function buildToolServers(ctx: ToolContext, deps: ToolDeps): Record<strin
     async (args) => text(await outlookMail({ action: args.action, folder: args.folder, count: args.count, unreadOnly: args.unread_only, query: args.query, id: args.id })),
   );
 
+  const outlookPimTool = tool(
+    'outlook_pim',
+    'Read the user\'s LOCAL Outlook calendar, contacts, or tasks (classic Outlook via COM; read-only, no cloud login). calendar = upcoming events; contacts = find a person\'s email/phone; tasks = open to-dos. Use for "what\'s on my calendar?", "find John\'s number", "my open tasks".',
+    {
+      action: z.enum(['calendar', 'contacts', 'tasks']).describe('What to read'),
+      days: z.number().optional().describe('calendar: days ahead (default 7, max 60)'),
+      query: z.string().optional().describe('contacts: name/company/email to match'),
+      count: z.number().optional().describe('Max results (default 25)'),
+    },
+    async (args) => text(await outlookPim(args)),
+  );
+
+  const onenoteTool = tool(
+    'onenote_read',
+    'Read the user\'s OneNote notebooks (desktop OneNote via COM; read-only). notebooks = list pages; search = find pages by text; read = full page text by id. Use for "what do my notes say about X?".',
+    {
+      action: z.enum(['notebooks', 'search', 'read']).describe('What to do'),
+      query: z.string().optional().describe('search: text to find'),
+      id: z.string().optional().describe('read: page id from notebooks/search'),
+    },
+    async (args) => text(await onenoteRead(args)),
+  );
+
+  const sqlTool = tool(
+    'sql_query',
+    'Run a READ-ONLY SQL query (single SELECT/WITH) against local Microsoft SQL Server / LocalDB via sqlcmd (Windows auth). Default server (localdb)\\MSSQLLocalDB; pass server for another instance. Discover databases with SELECT name FROM sys.databases.',
+    {
+      query: z.string().describe('A single SELECT (or WITH...SELECT) statement'),
+      server: z.string().optional().describe('Server/instance (default (localdb)\\MSSQLLocalDB)'),
+      database: z.string().optional().describe('Database name'),
+    },
+    async (args) => text(await sqlQuery(args)),
+  );
+
+  const browserHistoryTool = tool(
+    'browser_history',
+    'Search the user\'s LOCAL browser history or bookmarks (Chrome/Edge/Firefox profiles on this machine; read-only). Use for "what was that site about X last week?", "find my bookmark for Y".',
+    {
+      query: z.string().describe('Text matched against page title and URL'),
+      what: z.enum(['history', 'bookmarks']).optional().describe('Default history'),
+      browser: z.enum(['chrome', 'edge', 'firefox']).optional().describe('Limit to one browser'),
+      limit: z.number().optional().describe('Max results (default 20, max 50)'),
+    },
+    async (args) => text(await browserHistory(args)),
+  );
+
+  const archiveToolSdk = tool(
+    'archive',
+    'Work with archive files via 7-Zip: list contents, extract (dest optional), or create from paths. Supports zip, 7z, rar, tar, gz and more.',
+    {
+      action: z.enum(['list', 'extract', 'create']).describe('What to do'),
+      archive: z.string().describe('Path to the archive file'),
+      dest: z.string().optional().describe('extract: destination folder'),
+      paths: z.array(z.string()).optional().describe('create: files/folders to include'),
+    },
+    async (args) => text(await archiveTool(args)),
+  );
+
   const haBuildMap = tool(
     'ha_build_map',
     'Scan Home Assistant and (re)build the "home-assistant-devices" skill: a clean map of devices by area and type with simple aliases and exact entity_ids, organized by the smart model so the local model can control the house via ha_service. Call this when devices/areas changed or the map is missing.',
@@ -516,6 +575,11 @@ export function buildToolServers(ctx: ToolContext, deps: ToolDeps): Record<strin
         haBuildMap,
         readEmail,
         outlookMailTool,
+        outlookPimTool,
+        onenoteTool,
+        sqlTool,
+        browserHistoryTool,
+        archiveToolSdk,
         addEmailAccount,
         listEmailAccounts,
         createAgent,
