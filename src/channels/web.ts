@@ -207,12 +207,15 @@ function maybeRefreshUpdate(): void {
 const OLLAMA_CATALOG: Array<{ id: string; need: number; desc: string }> = [
   { id: 'llama3.2:1b', need: 2, desc: 'Tiny & fast - routing / simple offload (general, tools).' },
   { id: 'llama3.2:3b', need: 4, desc: 'Light all-rounder, fully GPU; broad general chat.' },
-  { id: 'mistral:7b', need: 5, desc: 'Lean, friendly general chat - fast.' },
+  { id: 'qwen2.5:7b', need: 6, desc: 'Excellent small all-rounder - strong tools + multilingual.' },
   { id: 'llama3.1:8b', need: 6, desc: 'Dependable all-rounder + reliable tool calling.' },
   { id: 'hermes3:8b', need: 6, desc: 'Most natural general chat (Llama-3.1 tune), strong tools.' },
   { id: 'mistral-nemo', need: 8, desc: 'Smarter all-rounder, multilingual (uses RAM on small GPUs).' },
-  { id: 'mixtral:8x7b', need: 26, desc: 'Strong general MoE - needs a big GPU.' },
-  { id: 'llama3.3:70b', need: 42, desc: 'Best local general model - needs a large GPU.' },
+  { id: 'qwen2.5:14b', need: 11, desc: 'Strong all-rounder - great tools/reasoning (mid-range GPUs, 16GB+ Macs).' },
+  { id: 'gemma2:27b', need: 18, desc: 'Big capable general model (24GB GPUs / large Macs).' },
+  { id: 'qwen2.5:32b', need: 22, desc: 'Top mid-size all-rounder (24GB+ GPUs / 32GB+ Macs).' },
+  { id: 'mixtral:8x7b', need: 26, desc: 'Strong general MoE - needs a big GPU / large Mac.' },
+  { id: 'llama3.3:70b', need: 42, desc: 'Best local general model - needs a large GPU / 64GB+ Mac.' },
 ];
 
 export class WebChannel implements Channel {
@@ -754,7 +757,8 @@ export class WebChannel implements Channel {
       return this.json(res, 200, getCanvas());
     }
     // Structured data for the local-app desktop apps (Outlook/Notes/Database/History).
-    if (url.pathname === '/api/local' && req.method === 'POST') {
+    // NB: distinct path from /api/local (the Ollama local-model panel) to avoid shadowing its POSTs.
+    if (url.pathname === '/api/appdata' && req.method === 'POST') {
       if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
       let body = '';
       req.on('data', (c) => { body += c; });

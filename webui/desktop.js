@@ -1870,7 +1870,7 @@
   // ============================================================
   // Local-data apps: Outlook (mail/calendar/contacts/tasks), Notes, Database, History
   // ============================================================
-  function localApi(fn, args) { return api('/api/local', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ fn: fn, args: args || {} }) }); }
+  function localApi(fn, args) { return api('/api/appdata', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ fn: fn, args: args || {} }) }); }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function tabBar(tabs, onPick) {
     var bar = el('div', 'app-tabs');
