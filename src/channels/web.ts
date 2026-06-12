@@ -21,6 +21,7 @@ import { extractDocText } from '../core/extract.js';
 import { outlookMailData, outlookPimData } from '../core/outlookLocal.js';
 import { onenoteData, sqlQueryData, browserHistoryData, sqlConnections, sqlAddConnection, sqlRemoveConnection } from '../core/localApps.js';
 import { getCanvas } from '../core/canvas.js';
+import { listApps, rescanApps, launchHostApp, appIconPng } from '../core/appscan.js';
 import { notifsSince } from '../core/notifications.js';
 import { getWatchers, setWatchers } from '../core/watchers.js';
 import { autostartStatus, setAutostart } from '../core/autostart.js';
@@ -750,6 +751,34 @@ export class WebChannel implements Channel {
         req.on('end', () => { try { this.json(res, 200, setWatchers(JSON.parse(body || '{}'))); } catch (err) { this.json(res, 400, { error: String(err) }); } });
         return;
       }
+    }
+    // Installed host apps: list / rescan / launch / icon.
+    if (url.pathname === '/api/apps' && req.method === 'GET') {
+      if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
+      return this.json(res, 200, { apps: listApps() });
+    }
+    if (url.pathname === '/api/apps/rescan' && req.method === 'POST') {
+      if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
+      return this.json(res, 200, { apps: rescanApps() });
+    }
+    if (url.pathname === '/api/applaunch' && req.method === 'POST') {
+      if (!this.authOk(req)) return this.json(res, 401, { error: 'unauthorized' });
+      let body = '';
+      req.on('data', (c) => { body += c; });
+      req.on('end', () => { try { this.json(res, 200, launchHostApp(String(JSON.parse(body || '{}').id || ''))); } catch (err) { this.json(res, 400, { error: String(err) }); } });
+      return;
+    }
+    if (url.pathname === '/api/appicon' && req.method === 'GET') {
+      if (!this.authOk(req)) { res.writeHead(401); res.end(); return; }
+      const p = appIconPng(url.searchParams.get('id') || '');
+      if (!p) { res.writeHead(404); res.end(); return; }
+      try {
+        const data = fs.readFileSync(p);
+        const ct = p.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+        res.writeHead(200, { 'content-type': ct, 'cache-control': 'max-age=86400' });
+        res.end(data);
+      } catch { res.writeHead(404); res.end(); }
+      return;
     }
     // Agent canvas — latest agent-pushed HTML for the Canvas desktop app to render/poll.
     if (url.pathname === '/api/canvas' && req.method === 'GET') {

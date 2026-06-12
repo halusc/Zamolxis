@@ -477,7 +477,7 @@
     { id: 'telnet', name: 'Telnet', iconSvg: ICON.term, cat: 'Network', skill: 'telnet-client', kind: 'native' },
     { id: 'messages', name: 'Messages', iconSvg: ICON.chat, cat: 'Communication', skill: 'chat-clients', kind: 'native' }
   ];
-  var CAT_ORDER = ['System', 'Office', 'Media', 'Network', 'Communication', 'Utilities', 'Agents'];
+  var CAT_ORDER = ['System', 'Apps', 'Agents', 'Office', 'Media', 'Network', 'Communication', 'Utilities'];
   function builtinApps() {
     return [
       { id: 'zamolxis', name: AGENT_NAME, iconSvg: ICON.zamolxis, kind: 'builtin', cat: 'System' },
@@ -486,9 +486,21 @@
       { id: 'help', name: T('Help'), iconSvg: ICON.help, kind: 'builtin', cat: 'System' }
     ];
   }
+  // Of the built-in web apps, only the ones with NO real installed equivalent stay on the desktop
+  // (the rest are replaced by launchers to the host's real apps). Canvas = agent output; Messages = channels.
+  var KEEP_NATIVE = { canvas: 1, messages: 1 };
+  var hostApps = []; // the machine's real installed apps (from /api/apps), shown as launchers
+  function hostIcon(id, name) {
+    var hue = hashHue(name || 'a'); var letter = ((name || '?').trim().charAt(0) || '?').toUpperCase();
+    return "<img src='/api/appicon?id=" + encodeURIComponent(id) + "' style='width:100%;height:100%;object-fit:contain' " +
+      "onerror=\"this.style.display='none';this.nextElementSibling.style.display='grid'\">" +
+      "<span style='display:none;width:100%;height:100%;border-radius:22%;background:hsl(" + hue + ",55%,48%);color:#fff;font-weight:700;place-items:center;font-size:55%'>" + esc(letter) + "</span>";
+  }
+  function loadHostApps() { return api('/api/apps').then(function (d) { hostApps = (d && d.apps) || []; }).catch(function () {}); }
   function appList() {
     var out = builtinApps();
-    CATALOG.forEach(function (a) { out.push({ id: a.id, name: T(a.name), iconSvg: a.iconSvg, kind: a.kind, cat: a.cat, skill: a.skill, baseName: a.name }); });
+    CATALOG.forEach(function (a) { if (!KEEP_NATIVE[a.id]) return; out.push({ id: a.id, name: T(a.name), iconSvg: a.iconSvg, kind: a.kind, cat: 'System', skill: a.skill, baseName: a.name }); });
+    hostApps.forEach(function (a) { out.push({ id: 'host:' + a.id, name: a.name, iconSvg: hostIcon(a.id, a.name), kind: 'host', cat: 'Apps' }); });
     agents.forEach(function (a) {
       out.push({ id: 'agent:' + a.name, name: a.label || a.name, iconSvg: agentIconSvg(a.label || a.name), kind: 'agent', cat: 'Agents', agent: a });
     });
@@ -518,6 +530,14 @@
   }
 
   function launchApp(appId, geom) {
+    // Host app launcher: open the REAL installed program on the machine (no in-desktop window).
+    if (appId.indexOf('host:') === 0) {
+      var hid = appId.slice(5);
+      api('/api/applaunch', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: hid }) })
+        .then(function (r) { showToast(r && r.ok ? ('Launched ' + (r.name || 'app')) : ((r && r.error) || 'Launch failed'), r && r.ok ? '' : ''); })
+        .catch(function () { showToast('Launch failed', ''); });
+      return null;
+    }
     var app = appById(appId);
     if (!app) return null;
     // singleton: focus if already open
@@ -2329,7 +2349,7 @@
     var os = document.body.dataset.os;
     var startX = os === 'ubuntu' ? 78 : 16;
     var startY = (os === 'mac' || os === 'ubuntu') ? 40 : 16;
-    appList().forEach(function (a, i) {
+    appList().filter(function (a) { return a.kind !== 'host'; }).forEach(function (a, i) {
       var ic = el('div', 'desk-icon');
       ic.appendChild(el('div', 'ico', a.iconSvg));
       ic.appendChild(el('div', 'label', a.name));
@@ -2417,4 +2437,5 @@
   // Restore the previous window session once agents are known (agent windows need the list);
   // fall back to opening the default Zamolxis app on a fresh/empty session.
   loadAgents().then(function () { if (!restoreSession()) launchApp('zamolxis'); });
+  loadHostApps(); // discover the machine's real installed apps for the Start menu launchers
 })();

@@ -28,6 +28,7 @@ import { initProviders } from './core/providers.js';
 import { initClaudeModels } from './core/claudeModels.js';
 import { initLocalApps } from './core/localApps.js';
 import { initWatchers } from './core/watchers.js';
+import { initAppScan } from './core/appscan.js';
 import { BanStore, isSmartestModel } from './core/bans.js';
 import { configuredProviders } from './core/providers.js';
 import { buildToolServers } from './tools/index.js';
@@ -88,6 +89,7 @@ async function main(): Promise<void> {
   initClaudeModels(config.dataDir); // live Claude model list from the API (cached; falls back offline)
   initLocalApps(config.dataDir); // saved SQL connection profiles for the Database app/tool
   initWatchers(config.dataDir); // proactive watchers (e.g. Outlook inbox) that push notifications
+  initAppScan(config.dataDir); // discover the host's installed apps for the desktop launchers
   const auth = checkAuth();
   logger.info(
     { dataDir: config.dataDir, model: config.model ?? '(cli default)', auth: auth.note },
