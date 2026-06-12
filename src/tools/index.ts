@@ -14,7 +14,8 @@ import { setTempName } from '../core/displayName.js';
 import { buildPaidTools } from './paid.js';
 import { readInbox, resolveAccount, listAccountNames, addAccount } from './email.js';
 import { outlookMail, outlookPim } from '../core/outlookLocal.js';
-import { onenoteRead, sqlQuery, browserHistory, archiveTool } from '../core/localApps.js';
+import { onenoteRead, sqlQuery, browserHistory, archiveTool, openInExcel } from '../core/localApps.js';
+import { openInWord, openInPowerpoint, openApp, scanDocument, itunes, systemStatus, steamGames, stickyNotes, autohotkey } from '../core/nativeApps.js';
 import { setCanvas, setCanvasTable } from '../core/canvas.js';
 import { browserControl } from '../core/browser.js';
 import type { AgentStore } from '../core/agents.js';
@@ -578,6 +579,63 @@ export function buildToolServers(ctx: ToolContext, deps: ToolDeps): Record<strin
     async (args) => { const v = setCanvasTable(args.columns, args.rows as unknown as string[][], args.title); return text(`Table (${(args.rows || []).length} rows) shown on the Canvas (v${v}) — sortable.`); },
   );
 
+  const openInExcelTool = tool(
+    'open_in_excel',
+    'Put tabular data into a REAL .xlsx and open it in the user\'s Excel. Pass columns + rows (+ optional title); the file is saved under the data dir and Excel opens it — full sorting/filtering/formulas. Or pass file to open an existing spreadsheet. PREFER this for query results and any table the user will work with.',
+    {
+      title: z.string().optional().describe('Sheet/file name'),
+      columns: z.array(z.string()).optional().describe('Column headers'),
+      rows: z.array(z.array(z.any())).optional().describe('Rows aligned to columns'),
+      file: z.string().optional().describe('Open this existing spreadsheet instead of creating one'),
+    },
+    async (args) => text(await openInExcel({ columns: args.columns, rows: args.rows as unknown as string[][], title: args.title, file: args.file })),
+  );
+
+  const wordTool = tool(
+    'open_in_word',
+    'Create a Word document from text/HTML and open it in Word (or open an existing .docx via file). Use for letters, reports, memos, formatted notes the user wants as a document.',
+    { title: z.string().optional(), text: z.string().optional().describe('Plain-text body (newlines = paragraphs)'), html: z.string().optional().describe('HTML body (overrides text)'), file: z.string().optional().describe('Open an existing .docx instead') },
+    async (args) => text(await openInWord(args)),
+  );
+  const pptTool = tool(
+    'open_in_powerpoint',
+    'Create a PowerPoint deck and open it (or open an existing .pptx via file). Pass slides: each {title, bullets:[...] or text}.',
+    { title: z.string().optional(), slides: z.array(z.object({ title: z.string().optional(), bullets: z.array(z.string()).optional(), text: z.string().optional() })).optional(), file: z.string().optional() },
+    async (args) => text(await openInPowerpoint(args)),
+  );
+  const openAppTool = tool(
+    'open_app',
+    'Open a file in a specific desktop app: vscode | notepad++ | winmerge | acrobat | vlc | default. For winmerge pass file + file2 to diff two files.',
+    { app: z.enum(['vscode', 'notepad++', 'winmerge', 'acrobat', 'vlc', 'default']).describe('Target app'), file: z.string().optional(), file2: z.string().optional().describe('winmerge: second file to diff') },
+    async (args) => text(await openApp(args)),
+  );
+  const scanTool = tool(
+    'scan_document',
+    'Acquire a page from a connected scanner (Windows WIA) and save + open it. The scanner UI may prompt to choose a device.',
+    { dest: z.string().optional().describe('Output file path (default: a .jpg in exports)') },
+    async (args) => text(await scanDocument(args)),
+  );
+  const itunesTool = tool(
+    'itunes',
+    'Control or search the iTunes music library (COM): status | play | pause | next | previous | search (with query).',
+    { action: z.enum(['status', 'play', 'pause', 'next', 'previous', 'search']), query: z.string().optional() },
+    async (args) => text(await itunes(args)),
+  );
+  const systemStatusTool = tool(
+    'system_status',
+    'Report live machine status: GPU (nvidia-smi), Netbird VPN, RAM/CPU. Use for "is my GPU busy?", "am I on the VPN?".',
+    {},
+    async () => text(await systemStatus()),
+  );
+  const steamTool = tool('steam_games', 'List the Steam games installed on this machine.', {}, async () => text(steamGames()));
+  const stickyTool = tool('sticky_notes', 'Read the user\'s Windows Sticky Notes (recent first).', {}, async () => text(await stickyNotes()));
+  const ahkTool = tool(
+    'autohotkey',
+    'Run an AutoHotkey script for desktop automation (send keys, move/click, launch, window actions). Pass script (AHK v2 code) or file (.ahk path). Powerful — only do what the user asked.',
+    { script: z.string().optional().describe('AutoHotkey source'), file: z.string().optional().describe('Path to an existing .ahk file') },
+    async (args) => text(await autohotkey(args)),
+  );
+
   const browserTool = tool(
     'browser',
     'Drive a real web browser (the user\'s Chrome) to navigate and interact — beyond read-only fetch. Actions: goto {url}; text (read page); snapshot (list clickable/typeable elements); click {text|selector}; type {value, text|selector, submit?}; press {key}; scroll {dy}; back; screenshot (shows on Canvas); close. Flow: goto → snapshot → click/type → text. Use for forms, search, logins you drive, multi-step web tasks.',
@@ -617,6 +675,16 @@ export function buildToolServers(ctx: ToolContext, deps: ToolDeps): Record<strin
         haBuildMap,
         showCanvas,
         showTable,
+        openInExcelTool,
+        wordTool,
+        pptTool,
+        openAppTool,
+        scanTool,
+        itunesTool,
+        systemStatusTool,
+        steamTool,
+        stickyTool,
+        ahkTool,
         browserTool,
         readEmail,
         outlookMailTool,

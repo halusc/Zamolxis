@@ -477,7 +477,7 @@
     { id: 'telnet', name: 'Telnet', iconSvg: ICON.term, cat: 'Network', skill: 'telnet-client', kind: 'native' },
     { id: 'messages', name: 'Messages', iconSvg: ICON.chat, cat: 'Communication', skill: 'chat-clients', kind: 'native' }
   ];
-  var CAT_ORDER = ['System', 'Office', 'Media', 'Network', 'Communication', 'Utilities', 'Agents'];
+  var CAT_ORDER = ['System', 'Apps', 'Agents', 'Office', 'Media', 'Network', 'Communication', 'Utilities'];
   function builtinApps() {
     return [
       { id: 'zamolxis', name: AGENT_NAME, iconSvg: ICON.zamolxis, kind: 'builtin', cat: 'System' },
@@ -486,9 +486,21 @@
       { id: 'help', name: T('Help'), iconSvg: ICON.help, kind: 'builtin', cat: 'System' }
     ];
   }
+  // Of the built-in web apps, only the ones with NO real installed equivalent stay on the desktop
+  // (the rest are replaced by launchers to the host's real apps). Canvas = agent output; Messages = channels.
+  var KEEP_NATIVE = { canvas: 1, messages: 1 };
+  var hostApps = []; // the machine's real installed apps (from /api/apps), shown as launchers
+  function hostIcon(id, name) {
+    var hue = hashHue(name || 'a'); var letter = ((name || '?').trim().charAt(0) || '?').toUpperCase();
+    return "<img src='/api/appicon?id=" + encodeURIComponent(id) + "' style='width:100%;height:100%;object-fit:contain' " +
+      "onerror=\"this.style.display='none';this.nextElementSibling.style.display='grid'\">" +
+      "<span style='display:none;width:100%;height:100%;border-radius:22%;background:hsl(" + hue + ",55%,48%);color:#fff;font-weight:700;place-items:center;font-size:55%'>" + esc(letter) + "</span>";
+  }
+  function loadHostApps() { return api('/api/apps').then(function (d) { hostApps = (d && d.apps) || []; }).catch(function () {}); }
   function appList() {
     var out = builtinApps();
-    CATALOG.forEach(function (a) { out.push({ id: a.id, name: T(a.name), iconSvg: a.iconSvg, kind: a.kind, cat: a.cat, skill: a.skill, baseName: a.name }); });
+    CATALOG.forEach(function (a) { if (!KEEP_NATIVE[a.id]) return; out.push({ id: a.id, name: T(a.name), iconSvg: a.iconSvg, kind: a.kind, cat: 'System', skill: a.skill, baseName: a.name }); });
+    hostApps.forEach(function (a) { out.push({ id: 'host:' + a.id, name: a.name, iconSvg: hostIcon(a.id, a.name), kind: 'host', cat: 'Apps' }); });
     agents.forEach(function (a) {
       out.push({ id: 'agent:' + a.name, name: a.label || a.name, iconSvg: agentIconSvg(a.label || a.name), kind: 'agent', cat: 'Agents', agent: a });
     });
@@ -518,6 +530,14 @@
   }
 
   function launchApp(appId, geom) {
+    // Host app launcher: open the REAL installed program on the machine (no in-desktop window).
+    if (appId.indexOf('host:') === 0) {
+      var hid = appId.slice(5);
+      api('/api/applaunch', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: hid }) })
+        .then(function (r) { showToast(r && r.ok ? ('Launched ' + (r.name || 'app')) : ((r && r.error) || 'Launch failed'), r && r.ok ? '' : ''); })
+        .catch(function () { showToast('Launch failed', ''); });
+      return null;
+    }
     var app = appById(appId);
     if (!app) return null;
     // singleton: focus if already open
@@ -640,7 +660,16 @@
       var d = new Date(); var tm = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
       function paint(model, tok) { node._who.textContent = (node._whoBase || AGENT_NAME) + ' · ' + tm + (secs != null ? ' · ' + secs + 's' : '') + (model ? ' · ' + model : '') + (tok ? ' · ' + tok + ' tok' : ''); }
       paint('', 0);
-      api('/api/status').then(function (s) { var l = s && s.last; if (l && l.model) paint(String(l.model).split(':').pop(), l.total || 0); }).catch(function () {});
+      // Model ids are tier-prefixed: "local:hermes3:8b", "free:cerebras:gpt-oss-120b", "claude-...".
+      // Strip only the tier (and provider for free/paid) — keep the full model name.
+      function modelLabel(m) {
+        m = String(m || '');
+        if (m.indexOf('local:') === 0) return m.slice(6) + ' (local)';
+        var fp = /^(free|paid):[^:]+:(.+)$/.exec(m);
+        if (fp) return fp[2];
+        return m;
+      }
+      api('/api/status').then(function (s) { var l = s && s.last; if (l && l.model) paint(modelLabel(l.model), l.total || 0); }).catch(function () {});
     }
     // restore the saved transcript for this conversation
     var _hist = loadChatLog(logKey);
@@ -2320,7 +2349,7 @@
     var os = document.body.dataset.os;
     var startX = os === 'ubuntu' ? 78 : 16;
     var startY = (os === 'mac' || os === 'ubuntu') ? 40 : 16;
-    appList().forEach(function (a, i) {
+    appList().filter(function (a) { return a.kind !== 'host'; }).forEach(function (a, i) {
       var ic = el('div', 'desk-icon');
       ic.appendChild(el('div', 'ico', a.iconSvg));
       ic.appendChild(el('div', 'label', a.name));
@@ -2380,8 +2409,14 @@
   if (vGet('zx_voice_wake')) setTimeout(startWake, 1200);
   // Auto-open/raise the Canvas when the agent pushes new content (baseline the first poll so a
   // pre-existing canvas doesn't pop on every reload).
+  // Baseline the canvas version ONCE at load (so a pre-existing canvas from a past session
+  // doesn't pop on every reload), then open/raise on any later push — including the first one.
   var _canvasSeen = null;
-  setInterval(function () { api('/api/canvas').then(function (d) { if (!d) return; if (_canvasSeen === null) { _canvasSeen = d.version; return; } if (d.version > _canvasSeen) { _canvasSeen = d.version; launchApp('canvas'); } }).catch(function () {}); }, 3000);
+  api('/api/canvas').then(function (d) { _canvasSeen = d ? d.version : 0; }).catch(function () { _canvasSeen = 0; });
+  setInterval(function () {
+    if (_canvasSeen === null) return;
+    api('/api/canvas').then(function (d) { if (!d) return; if (d.version > _canvasSeen) { _canvasSeen = d.version; launchApp('canvas'); } }).catch(function () {});
+  }, 2000);
   // Proactive notifications: poll the feed, toast new ones (baseline first poll so restarts don't replay).
   var _notifSince = 0, _notifPrimed = false;
   setInterval(function () {
@@ -2402,4 +2437,5 @@
   // Restore the previous window session once agents are known (agent windows need the list);
   // fall back to opening the default Zamolxis app on a fresh/empty session.
   loadAgents().then(function () { if (!restoreSession()) launchApp('zamolxis'); });
+  loadHostApps(); // discover the machine's real installed apps for the Start menu launchers
 })();
