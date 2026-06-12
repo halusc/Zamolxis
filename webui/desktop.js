@@ -2389,8 +2389,14 @@
   if (vGet('zx_voice_wake')) setTimeout(startWake, 1200);
   // Auto-open/raise the Canvas when the agent pushes new content (baseline the first poll so a
   // pre-existing canvas doesn't pop on every reload).
+  // Baseline the canvas version ONCE at load (so a pre-existing canvas from a past session
+  // doesn't pop on every reload), then open/raise on any later push — including the first one.
   var _canvasSeen = null;
-  setInterval(function () { api('/api/canvas').then(function (d) { if (!d) return; if (_canvasSeen === null) { _canvasSeen = d.version; return; } if (d.version > _canvasSeen) { _canvasSeen = d.version; launchApp('canvas'); } }).catch(function () {}); }, 3000);
+  api('/api/canvas').then(function (d) { _canvasSeen = d ? d.version : 0; }).catch(function () { _canvasSeen = 0; });
+  setInterval(function () {
+    if (_canvasSeen === null) return;
+    api('/api/canvas').then(function (d) { if (!d) return; if (d.version > _canvasSeen) { _canvasSeen = d.version; launchApp('canvas'); } }).catch(function () {});
+  }, 2000);
   // Proactive notifications: poll the feed, toast new ones (baseline first poll so restarts don't replay).
   var _notifSince = 0, _notifPrimed = false;
   setInterval(function () {
